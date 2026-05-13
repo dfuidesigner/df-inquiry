@@ -1,41 +1,25 @@
 "use client"
 
-import React from "react"
+import { useState } from "react"
 import { motion } from "framer-motion"
-import { ArrowRight } from "lucide-react"
+import { Loader2 } from "lucide-react"
 import { useForm } from "react-hook-form"
-import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
+import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
-const contactSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Please enter a valid email address"),
-  phone: z.string().min(10, "Phone number must be at least 10 digits"),
-  service: z.string().min(1, "Please select a service"),
-  message: z.string().optional(),
-})
-
-type ContactFormValues = z.infer<typeof contactSchema>
-
-const services = [
-  "UI/UX Design",
-  "SaaS Design",
-  "Branding",
-  "CRO",
-  "Mobile app",
-  "Development",
-  "MVP Development",
-  "Web Design",
-]
+import { contactSchema, type ContactFormValues } from "@/lib/validations"
+import { submitContactForm } from "../actions"
 
 export default function ContactSection() {
+  const router = useRouter()
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
   const {
     register,
     handleSubmit,
     formState: { errors },
-    watch,
-    setValue,
   } = useForm<ContactFormValues>({
     resolver: zodResolver(contactSchema),
     defaultValues: {
@@ -44,27 +28,49 @@ export default function ContactSection() {
       phone: "",
       service: "",
       message: "",
+      website: "",
+      formStart: "",
+      source: "Contact Section Form",
     },
   })
 
-  const selectedService = watch("service")
+  const onSubmit = async (data: ContactFormValues) => {
+    setIsSubmitting(true)
 
-  const onSubmit = (data: ContactFormValues) => {
-    const message = `
-New Contact Enquiry
+    try {
+      let parsedUtmData: Record<string, string> = {}
 
-Name: ${data.name}
-Email: ${data.email}
-Phone: ${data.phone}
-Service: ${data.service}
-Message: ${data.message || "N/A"}
-`.trim()
+      if (typeof window !== "undefined") {
+        try {
+          const storedUtm = localStorage.getItem("digitalFueledSource")
 
-    const whatsappUrl = `https://wa.me/917838152753?text=${encodeURIComponent(
-      message
-    )}`
+          if (storedUtm) {
+            parsedUtmData = JSON.parse(storedUtm)
+          }
+        } catch (error) {
+          console.error("Failed to parse UTM data:", error)
+        }
+      }
 
-    window.open(whatsappUrl, "_blank")
+      data.utm_source = parsedUtmData.utm_source || "Direct"
+      data.utm_medium = parsedUtmData.utm_medium || ""
+      data.utm_campaign = parsedUtmData.utm_campaign || ""
+      data.utm_content = parsedUtmData.utm_content || ""
+      data.utm_term = parsedUtmData.utm_term || ""
+
+      const response = await submitContactForm(data)
+
+      if (response.success) {
+        router.push("/thank-you")
+      } else {
+        toast.success("Message sent successfully! We will be in touch soon.")
+        setIsSubmitting(false)
+      }
+    } catch (error) {
+      console.error("Submission error:", error)
+      toast.error("Failed to send message.")
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -75,7 +81,7 @@ Message: ${data.message || "N/A"}
             <h2 className="mb-2 font-mono text-[44px] leading-tight tracking-tight sm:text-[56px]">
               Have a Project?
             </h2>
-            <p className="mb-10 font-mono text-[44px] leading-tight tracking-tight bg-linear-to-tl from-[#0091DA] via-[#143DA7] to-[#080C5E] bg-clip-text text-transparent sm:text-[56px]">
+            <p className="mb-10 bg-linear-to-tl from-[#0091DA] via-[#143DA7] to-[#080C5E] bg-clip-text font-mono text-[44px] leading-tight tracking-tight text-transparent sm:text-[56px]">
               Let&apos;s talk!
             </p>
 
@@ -171,6 +177,15 @@ Message: ${data.message || "N/A"}
               </div>
 
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+                {/* Honeypot Field */}
+                <input
+                  type="text"
+                  {...register("website")}
+                  className="hidden"
+                  tabIndex={-1}
+                  autoComplete="off"
+                />
+
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                   <div className="flex flex-col space-y-1.5">
                     <label
@@ -299,14 +314,27 @@ Message: ${data.message || "N/A"}
                     {...register("message")}
                     className="w-full resize-y rounded border border-gray-200 bg-white px-3 py-2 text-[13px] text-gray-900 placeholder-gray-400 transition outline-none focus:border-blue-500"
                   />
+                  {errors.message && (
+                    <span className="text-[10px] text-red-500">
+                      {errors.message.message}
+                    </span>
+                  )}
                 </div>
 
                 <div className="pt-2">
                   <button
                     type="submit"
-                    className="w-full rounded-md bg-[#1e5bce] py-3 text-[14px] font-bold text-white transition-all hover:bg-blue-700 active:bg-blue-800"
+                    disabled={isSubmitting}
+                    className="flex w-full items-center justify-center gap-2 rounded-md bg-[#1e5bce] py-3 text-[14px] font-bold text-white transition-all hover:bg-blue-700 active:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-70"
                   >
-                    Submit
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />{" "}
+                        Submitting...
+                      </>
+                    ) : (
+                      "Submit"
+                    )}
                   </button>
                 </div>
 

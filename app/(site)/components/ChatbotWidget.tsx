@@ -2,24 +2,28 @@
 
 import React, { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { MessageSquare, X, Send, Phone, RefreshCw } from "lucide-react"
+import { MessageSquare, X, Send, Phone, RefreshCw, Loader2 } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
+import { toast } from "sonner"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
-// --- Updated Form Schema (Matching Contact/Consultation Sections) ---
+import { submitContactForm } from "../actions"
+
 const chatFormSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Please enter a valid email address"),
   phone: z.string().min(10, "Phone number must be at least 10 digits"),
   service: z.string().min(1, "Please select a service"),
   message: z.string().optional(),
+  website: z.string().optional(),
+  formStart: z.string().optional(),
+  source: z.string().optional(),
 })
 
 type ChatFormValues = z.infer<typeof chatFormSchema>
 
-// --- Chat Types ---
 type Option = {
   label: string
   action: string
@@ -33,8 +37,6 @@ type Message = {
   isForm?: boolean
   timestamp: string
 }
-
-// Helper to get formatted time (e.g., "10:30 AM")
 const getCurrentTime = () => {
   return new Date().toLocaleTimeString("en-US", {
     hour: "numeric",
@@ -43,7 +45,6 @@ const getCurrentTime = () => {
   })
 }
 
-// Generate a safe unique ID
 const generateId = () => {
   return typeof crypto !== "undefined" && crypto.randomUUID
     ? crypto.randomUUID()
@@ -69,19 +70,15 @@ export default function Chatbot() {
   const [isTyping, setIsTyping] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  // Auto-scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages, isTyping])
 
-  // Restart Chat
   const restartChat = () => {
     setMessages([{ ...INITIAL_MESSAGES[0], timestamp: getCurrentTime() }])
   }
 
-  // Handle User Clicks on Options
   const handleOptionClick = async (option: Option) => {
-    // 1. Add user's selected text as a message
     addMessage({
       id: generateId(),
       text: option.label,
@@ -89,19 +86,16 @@ export default function Chatbot() {
       timestamp: getCurrentTime(),
     })
 
-    // 2. Remove options from the previous bot message so they can't click it again
     setMessages((prev) =>
       prev.map((msg) =>
         msg.sender === "bot" ? { ...msg, options: undefined } : msg
       )
     )
 
-    // 3. Simulate typing delay
     setIsTyping(true)
     await new Promise((resolve) => setTimeout(resolve, 800))
     setIsTyping(false)
 
-    // 4. Bot Response Logic (Conversational Flow)
     switch (option.action) {
       case "EXPLORE_SERVICES":
         addMessage({
@@ -118,7 +112,6 @@ export default function Chatbot() {
         })
         break
 
-      // --- Explaining Services ---
       case "SERVICE_WEB":
         addMessage({
           id: generateId(),
@@ -175,7 +168,6 @@ export default function Chatbot() {
         })
         break
 
-      // --- Showing the Form ---
       case "SHOW_FORM":
         addMessage({
           id: generateId(),
@@ -214,13 +206,49 @@ export default function Chatbot() {
     setMessages((prev) => [...prev, msg])
   }
 
-  // Handle Form Submission inside the chat
   const onFormSubmit = async (data: ChatFormValues) => {
+    try {
+      let parsedUtmData: Record<string, string> = {}
+
+      if (typeof window !== "undefined") {
+        try {
+          const storedUtm = localStorage.getItem("digitalFueledSource")
+
+          if (storedUtm) {
+            parsedUtmData = JSON.parse(storedUtm)
+          }
+        } catch (error) {
+          console.error("Failed to parse UTM data:", error)
+        }
+      }
+
+      const submissionData = {
+        ...data,
+        utm_source: parsedUtmData.utm_source || "Direct",
+        utm_medium: parsedUtmData.utm_medium || "",
+        utm_campaign: parsedUtmData.utm_campaign || "",
+        utm_content: parsedUtmData.utm_content || "",
+        utm_term: parsedUtmData.utm_term || "",
+      }
+
+      const response = await submitContactForm(submissionData)
+
+      if (response.success) {
+        toast.success("Message sent successfully!")
+        showSuccessMessage(data)
+      } else {
+        toast.error("Failed to send message. Please try again.")
+      }
+    } catch (error) {
+      console.error("Submission error:", error)
+      toast.error("Failed to send message.")
+    }
+  }
+
+  const showSuccessMessage = async (data: ChatFormValues) => {
     setMessages((prev) =>
       prev.map((msg) => (msg.isForm ? { ...msg, isForm: false } : msg))
     )
-
-    console.log("Chat Lead Submitted:", data)
 
     setIsTyping(true)
     await new Promise((resolve) => setTimeout(resolve, 1000))
@@ -235,7 +263,6 @@ export default function Chatbot() {
     })
   }
 
-  // Quick WhatsApp Redirection
   const openWhatsApp = () => {
     window.open(
       "https://wa.me/917838152753?text=Hi!%20I%20am%20looking%20for%20digital%20services.",
@@ -245,11 +272,9 @@ export default function Chatbot() {
 
   return (
     <>
-      {/* --- Floating Action Buttons (WhatsApp + Chatbot) --- */}
       <AnimatePresence>
         {!isOpen && (
           <div className="fixed right-6 bottom-6 z-50 flex flex-col gap-4">
-            {/* WhatsApp Widget */}
             <motion.button
               initial={{ scale: 0, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -267,7 +292,6 @@ export default function Chatbot() {
               </svg>
             </motion.button>
 
-            {/* Main Chatbot Button */}
             <motion.button
               initial={{ scale: 0, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -282,7 +306,6 @@ export default function Chatbot() {
         )}
       </AnimatePresence>
 
-      {/* --- Chat Window --- */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -290,9 +313,8 @@ export default function Chatbot() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="fixed right-6 bottom-6 z-50 flex h-[600px] max-h-[85vh] w-[360px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5"
+            className="fixed right-6 bottom-6 z-50 flex h-150 max-h-[85vh] w-90 max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5"
           >
-            {/* Header */}
             <div className="flex items-center justify-between bg-linear-to-r from-[#0091DA] to-[#080C5E] p-4 text-white">
               <div className="flex items-center gap-3">
                 <Avatar className="h-10 w-10 border border-white/20 bg-white">
@@ -315,7 +337,6 @@ export default function Chatbot() {
                 </div>
               </div>
 
-              {/* Header Actions */}
               <div className="flex items-center gap-1">
                 <button
                   onClick={restartChat}
@@ -334,7 +355,6 @@ export default function Chatbot() {
               </div>
             </div>
 
-            {/* Message Area */}
             <div className="flex-1 overflow-y-auto bg-gray-50 p-4 pb-20">
               <div className="flex flex-col gap-5">
                 {messages.map((msg) => (
@@ -416,7 +436,6 @@ export default function Chatbot() {
               </div>
             </div>
 
-            {/* Footer Placeholder */}
             <div className="absolute bottom-0 w-full border-t border-gray-100 bg-white p-3 text-center">
               <span className="text-[11px] font-medium text-gray-400">
                 ⚡ Powered by Digital Fueled
@@ -429,21 +448,38 @@ export default function Chatbot() {
   )
 }
 
-// --- Internal Form Component for Chatbot ---
 function ChatForm({
   onSubmit,
   onWhatsApp,
 }: {
-  onSubmit: (data: ChatFormValues) => void
+  onSubmit: (data: ChatFormValues) => Promise<void>
   onWhatsApp: () => void
 }) {
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm<ChatFormValues>({
     resolver: zodResolver(chatFormSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      phone: "",
+      service: "",
+      message: "",
+      website: "",
+      formStart: "",
+      source: "Chatbot Form",
+    },
   })
+
+  const handleInternalSubmit = async (data: ChatFormValues) => {
+    setIsSubmitting(true)
+    await onSubmit(data)
+    setIsSubmitting(false)
+  }
 
   return (
     <motion.div
@@ -458,15 +494,24 @@ function ChatForm({
         </span>
       </div>
       <form
-        onSubmit={handleSubmit(onSubmit)}
+        onSubmit={handleSubmit(handleInternalSubmit)}
         className="flex flex-col gap-2.5 p-4"
       >
-        {/* Name */}
+        <input
+          type="text"
+          {...register("website")}
+          className="hidden"
+          tabIndex={-1}
+          autoComplete="off"
+        />
+
         <div>
           <input
             {...register("name")}
             placeholder="Your Name"
-            className="w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-[13px] transition-colors outline-none focus:border-[#1e5bce] focus:bg-white"
+            className={`w-full rounded-md border bg-gray-50 px-3 py-2 text-[13px] transition-colors outline-none focus:border-[#1e5bce] focus:bg-white ${
+              errors.name ? "border-red-500 bg-red-50" : "border-gray-200"
+            }`}
           />
           {errors.name && (
             <span className="mt-1 block text-[10px] text-red-500">
@@ -475,13 +520,14 @@ function ChatForm({
           )}
         </div>
 
-        {/* Email */}
         <div>
           <input
             {...register("email")}
             type="email"
             placeholder="Your Email"
-            className="w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-[13px] transition-colors outline-none focus:border-[#1e5bce] focus:bg-white"
+            className={`w-full rounded-md border bg-gray-50 px-3 py-2 text-[13px] transition-colors outline-none focus:border-[#1e5bce] focus:bg-white ${
+              errors.email ? "border-red-500 bg-red-50" : "border-gray-200"
+            }`}
           />
           {errors.email && (
             <span className="mt-1 block text-[10px] text-red-500">
@@ -490,13 +536,14 @@ function ChatForm({
           )}
         </div>
 
-        {/* Phone */}
         <div>
           <input
             {...register("phone")}
             type="tel"
             placeholder="Phone Number"
-            className="w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-[13px] transition-colors outline-none focus:border-[#1e5bce] focus:bg-white"
+            className={`w-full rounded-md border bg-gray-50 px-3 py-2 text-[13px] transition-colors outline-none focus:border-[#1e5bce] focus:bg-white ${
+              errors.phone ? "border-red-500 bg-red-50" : "border-gray-200"
+            }`}
           />
           {errors.phone && (
             <span className="mt-1 block text-[10px] text-red-500">
@@ -505,11 +552,12 @@ function ChatForm({
           )}
         </div>
 
-        {/* Service Dropdown */}
         <div>
           <select
             {...register("service")}
-            className="w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-[13px] text-gray-500 transition-colors outline-none focus:border-[#1e5bce] focus:bg-white"
+            className={`w-full rounded-md border bg-gray-50 px-3 py-2 text-[13px] text-gray-500 transition-colors outline-none focus:border-[#1e5bce] focus:bg-white ${
+              errors.service ? "border-red-500 bg-red-50" : "border-gray-200"
+            }`}
           >
             <option value="">Select Service..</option>
             <option value="website-design">Website Design & Development</option>
@@ -526,7 +574,6 @@ function ChatForm({
           )}
         </div>
 
-        {/* Message / Brief */}
         <div>
           <textarea
             {...register("message")}
@@ -538,9 +585,18 @@ function ChatForm({
 
         <button
           type="submit"
-          className="mt-1 flex w-full items-center justify-center gap-2 rounded-md bg-[#1e5bce] py-2.5 text-[13px] font-bold text-white transition-colors hover:bg-blue-700 active:scale-[0.98]"
+          disabled={isSubmitting}
+          className="mt-1 flex w-full items-center justify-center gap-2 rounded-md bg-[#1e5bce] py-2.5 text-[13px] font-bold text-white transition-colors hover:bg-blue-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
         >
-          Send Details <Send className="h-3 w-3" />
+          {isSubmitting ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" /> Submitting...
+            </>
+          ) : (
+            <>
+              Send Details <Send className="h-3 w-3" />
+            </>
+          )}
         </button>
 
         <div className="relative mt-2 flex items-center justify-center py-1">

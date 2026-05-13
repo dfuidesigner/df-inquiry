@@ -1,38 +1,75 @@
 "use client"
 
+import { useState } from "react"
 import { motion } from "framer-motion"
-import { ArrowRight } from "lucide-react"
+import { ArrowRight, Loader2 } from "lucide-react"
 import { useForm } from "react-hook-form"
-import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
+import { useRouter } from "next/navigation"
 
-const consultationSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Please enter a valid email address"),
-  phone: z.string().min(10, "Phone number must be at least 10 digits"),
-  service: z.string().min(1, "Please select a service"),
-  message: z.string().optional(),
-})
+import { contactSchema, type ContactFormValues } from "@/lib/validations"
+import { submitContactForm } from "../actions"
+import { toast } from "sonner"
 
 export default function ConsultationSection() {
+  const router = useRouter()
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<z.infer<typeof consultationSchema>>({
-    resolver: zodResolver(consultationSchema),
+  } = useForm<ContactFormValues>({
+    resolver: zodResolver(contactSchema),
     defaultValues: {
       name: "",
       email: "",
       phone: "",
       service: "",
       message: "",
+      website: "",
+      formStart: "",
+      source: "Consultation Form",
     },
   })
 
-  const onSubmit = (data: z.infer<typeof consultationSchema>) => {
-    console.log("Validated Form Data:", data)
-    alert("Form submitted successfully! Check console for data.")
+  const onSubmit = async (data: ContactFormValues) => {
+    setIsSubmitting(true)
+
+    try {
+      let parsedUtmData: Record<string, string> = {}
+
+      if (typeof window !== "undefined") {
+        try {
+          const storedUtm = localStorage.getItem("digitalFueledSource")
+
+          if (storedUtm) {
+            parsedUtmData = JSON.parse(storedUtm)
+          }
+        } catch (error) {
+          console.error("Failed to parse UTM data:", error)
+        }
+      }
+
+      data.utm_source = parsedUtmData.utm_source || "Direct"
+      data.utm_medium = parsedUtmData.utm_medium || ""
+      data.utm_campaign = parsedUtmData.utm_campaign || ""
+      data.utm_content = parsedUtmData.utm_content || ""
+      data.utm_term = parsedUtmData.utm_term || ""
+
+      const response = await submitContactForm(data)
+
+      if (response.success) {
+        router.push("/thank-you")
+      } else {
+        toast.success("Message sent successfully! We will be in touch soon.")
+        setIsSubmitting(false)
+      }
+    } catch (error) {
+      console.error("Submission error:", error)
+      toast.error("Failed to send message.")
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -41,12 +78,12 @@ export default function ConsultationSection() {
         className="absolute inset-0 z-0"
         style={{
           backgroundImage: `url(/images/bg1.avif)`,
-          // backgroundSize: "40px 40px",
         }}
       />
       <div className="pointer-events-none absolute top-0 left-[-10%] h-125 w-125 rounded-full bg-blue-600/20 blur-[120px]" />
       <div className="relative z-10 container mx-auto max-w-7xl px-6">
         <div className="grid grid-cols-1 items-start gap-12 lg:grid-cols-7 lg:gap-10">
+          {/* Left Side Content */}
           <motion.div
             initial={{ opacity: 0, x: -40 }}
             whileInView={{ opacity: 1, x: 0 }}
@@ -55,20 +92,17 @@ export default function ConsultationSection() {
             className="flex flex-col items-start justify-end gap-6 lg:col-span-4"
           >
             <div className="space-y-4">
-              {/* Overline */}
               <div className="mb-2 flex items-center gap-4 text-[10px] font-bold tracking-widest text-[#3b82f6] uppercase">
                 <span className="h-px w-8 bg-[#3b82f6]"></span>
                 Digital Fueled IT Pvt Ltd
                 <span className="h-px w-8 bg-[#3b82f6]"></span>
               </div>
 
-              {/* Heading */}
               <h1 className="font-gra text-[40px] leading-[1.1] font-bold tracking-tight text-white md:text-[45px]">
                 Website Designing & Digital Marketing{" "}
                 <span className="text-[#3b82f6]">Company in Delhi</span>
               </h1>
 
-              {/* Paragraph */}
               <div className="mt-4 space-y-4 leading-relaxed text-gray-300">
                 <p className="text-[16px]">
                   Since 2019, Digital Fueled IT Pvt Ltd has been helping
@@ -131,8 +165,15 @@ export default function ConsultationSection() {
               </div>
 
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+                <input
+                  type="text"
+                  {...register("website")}
+                  className="hidden"
+                  tabIndex={-1}
+                  autoComplete="off"
+                />
+
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                  {/* Your Name */}
                   <div className="flex flex-col space-y-1.5">
                     <label
                       htmlFor="name"
@@ -158,7 +199,6 @@ export default function ConsultationSection() {
                     )}
                   </div>
 
-                  {/* Your Email */}
                   <div className="flex flex-col space-y-1.5">
                     <label
                       htmlFor="email"
@@ -186,7 +226,6 @@ export default function ConsultationSection() {
                 </div>
 
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                  {/* Your Phone Number */}
                   <div className="flex flex-col space-y-1.5">
                     <label
                       htmlFor="phone"
@@ -248,7 +287,6 @@ export default function ConsultationSection() {
                   </div>
                 </div>
 
-                {/* Your Message */}
                 <div className="flex flex-col space-y-1.5">
                   <label
                     htmlFor="message"
@@ -273,9 +311,17 @@ export default function ConsultationSection() {
                 <div className="pt-2">
                   <button
                     type="submit"
-                    className="w-full rounded-md bg-[#1e5bce] py-3 text-[14px] font-bold text-white transition-all hover:bg-blue-700 active:bg-blue-800"
+                    disabled={isSubmitting}
+                    className="flex w-full items-center justify-center gap-2 rounded-md bg-[#1e5bce] py-3 text-[14px] font-bold text-white transition-all hover:bg-blue-700 active:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-70"
                   >
-                    Submit
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />{" "}
+                        Submitting...
+                      </>
+                    ) : (
+                      "Submit"
+                    )}
                   </button>
                 </div>
               </form>
