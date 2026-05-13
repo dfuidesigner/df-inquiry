@@ -1,13 +1,16 @@
-import { Geist, Geist_Mono, Inter } from "next/font/google"
+import { Inter, Cal_Sans, Space_Grotesk } from "next/font/google"
 
 import "./globals.css"
-import { ThemeProvider } from "@/components/theme-provider"
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils"
 
-const inter = Inter({subsets:['latin'],variable:'--font-sans'})
-
-const fontMono = Geist_Mono({
+const inter = Inter({ subsets: ["latin"], variable: "--font-sans" })
+const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
+  variable: "--font-grotest",
+})
+const fontMono = Cal_Sans({
+  subsets: ["latin"],
+  weight: "400",
   variable: "--font-mono",
 })
 
@@ -20,11 +23,15 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={cn("antialiased", fontMono.variable, "font-sans", inter.variable)}
+      className={cn(
+        "antialiased",
+        "font-sans",
+        fontMono.variable,
+        spaceGrotesk.variable,
+        inter.variable
+      )}
     >
-      <body>
-        <ThemeProvider>{children}</ThemeProvider>
-      </body>
+      <body>{children}</body>
     </html>
   )
 }
