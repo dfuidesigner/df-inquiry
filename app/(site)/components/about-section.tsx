@@ -190,7 +190,7 @@ export default function AboutSection({
       {/* CLIENTS SECTION */}
       <section
         className="border-t border-zinc-100 bg-zinc-50 px-4 py-20 sm:px-6 lg:px-8"
-        id="clients"
+        id="client"
       >
         <div className="container mx-auto max-w-6xl">
           <div className="mb-12 text-center">
