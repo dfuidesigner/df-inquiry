@@ -1,6 +1,6 @@
 "use client"
 
-import { motion } from "framer-motion"
+import {  m as motion } from "framer-motion"
 
 const technologies = [
   { id: 1, name: "React", iconUrl: "https://cdn.simpleicons.org/react/61DAFB" },

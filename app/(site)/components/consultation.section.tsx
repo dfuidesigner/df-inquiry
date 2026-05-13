@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { motion } from "framer-motion"
+import {  m as motion } from "framer-motion"
 import { ArrowRight, Loader2 } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -10,8 +10,17 @@ import { useRouter } from "next/navigation"
 import { contactSchema, type ContactFormValues } from "@/lib/validations"
 import { submitContactForm } from "../actions"
 import { toast } from "sonner"
+import React from "react"
 
-export default function ConsultationSection() {
+interface ConsultationSectionProps {
+  title?: React.ReactNode
+  descriptions?: React.ReactNode[]
+}
+
+export default function ConsultationSection({
+  title,
+  descriptions,
+}: ConsultationSectionProps) {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -35,14 +44,11 @@ export default function ConsultationSection() {
 
   const onSubmit = async (data: ContactFormValues) => {
     setIsSubmitting(true)
-
     try {
       let parsedUtmData: Record<string, string> = {}
-
       if (typeof window !== "undefined") {
         try {
           const storedUtm = localStorage.getItem("digitalFueledSource")
-
           if (storedUtm) {
             parsedUtmData = JSON.parse(storedUtm)
           }
@@ -72,6 +78,21 @@ export default function ConsultationSection() {
     }
   }
 
+  const defaultTitle = (
+    <>
+      Website Designing & Digital Marketing{" "}
+      <span className="text-[#3b82f6]">Company in Delhi</span>
+    </>
+  )
+
+  const defaultDescriptions = [
+    "Since 2019, Digital Fueled IT Pvt Ltd has been helping businesses build a powerful online presence through creative website designing and performance-driven digital marketing solutions.",
+    "We develop fast, SEO-friendly, and mobile-responsive websites that not only look professional but also generate leads, sales, and long-term business growth. From website development and e-commerce solutions to SEO, Google Ads, and complete digital marketing services — we help brands attract the right audience and convert visitors into loyal customers.",
+  ]
+
+  const displayTitle = title || defaultTitle
+  const displayDescriptions = descriptions || defaultDescriptions
+
   return (
     <section className="relative overflow-hidden py-24 font-sans text-white sm:py-15">
       <div
@@ -98,29 +119,21 @@ export default function ConsultationSection() {
                 <span className="h-px w-8 bg-[#3b82f6]"></span>
               </div>
 
+              {/* DYNAMIC H1 TITLE HERE */}
               <h1 className="font-gra text-[40px] leading-[1.1] font-bold tracking-tight text-white md:text-[45px]">
-                Website Designing & Digital Marketing{" "}
-                <span className="text-[#3b82f6]">Company in Delhi</span>
+                {displayTitle}
               </h1>
 
+              {/* DYNAMIC DESCRIPTIONS HERE */}
               <div className="mt-4 space-y-4 leading-relaxed text-gray-300">
-                <p className="text-[16px]">
-                  Since 2019, Digital Fueled IT Pvt Ltd has been helping
-                  businesses build a powerful online presence through creative
-                  website designing and performance-driven digital marketing
-                  solutions.
-                </p>
-                <p className="text-[14px]">
-                  We develop fast, SEO-friendly, and mobile-responsive websites
-                  that not only look professional but also generate leads,
-                  sales, and long-term business growth. From{" "}
-                  <strong>
-                    website development and e-commerce solutions to SEO, Google
-                    Ads, and complete digital marketing services
-                  </strong>{" "}
-                  — we help brands attract the right audience and convert
-                  visitors into loyal customers.
-                </p>
+                {displayDescriptions.map((desc, idx) => (
+                  <p
+                    key={idx}
+                    className={idx === 0 ? "text-[16px]" : "text-[14px]"}
+                  >
+                    {desc}
+                  </p>
+                ))}
               </div>
             </div>
 

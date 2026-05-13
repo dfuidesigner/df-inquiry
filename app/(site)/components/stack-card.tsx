@@ -1,10 +1,24 @@
 "use client"
 
 import { useRef } from "react"
-import { useScroll, useTransform, motion, MotionValue } from "framer-motion"
+import { useScroll, useTransform,  m as motion, MotionValue } from "framer-motion"
 import Image from "next/image"
 
-const services = [
+interface ServiceData {
+  id: number
+  title: string
+  description: string
+  features: string[]
+  cta: string
+  bg: string
+  rightBg: string
+  textColor: string
+  ctaBg: string
+  ctaText: string
+  image: string
+}
+
+const servicesData: ServiceData[] = [
   {
     id: 1,
     title: "Website Design and Development",
@@ -70,7 +84,7 @@ const services = [
   },
   {
     id: 4,
-    title: "Digital Marketing",
+    title: "Digital Marketing & SEO",
     description:
       "Attract the right audience and convert visitors into loyal customers. Our performance-driven digital marketing solutions are built to scale your revenue and maximize ROI.",
     features: [
@@ -118,20 +132,18 @@ function Card({
   total,
   scrollYProgress,
 }: {
-  service: (typeof services)[0]
+  service: ServiceData 
   index: number
   total: number
   scrollYProgress: MotionValue<number>
 }) {
   const CARD_OFFSET = 120
-
   const targetScale = Math.max(0.5, 1 - (total - index - 1) * 0.1)
   const scale = useTransform(
     scrollYProgress,
     [index / total, 1],
     [1, targetScale]
   )
-
   const isDark = service.textColor === "#ffffff"
 
   return (
@@ -154,49 +166,40 @@ function Card({
       >
         <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_1fr]">
           <div className="flex min-h-125 flex-col justify-center p-5 lg:p-10">
-            <div>
-              <h2 className="mb-4 font-gra text-4xl leading-none font-semibold tracking-[-1px] lg:text-5xl">
-                {service.title}
-              </h2>
-
-              <p className="mb-10 max-w-[90%] text-sm leading-relaxed font-normal text-current md:text-[16px]">
-                {service.description}
-              </p>
-
-              <div className="mb-10 grid grid-cols-1 gap-x-4 gap-y-1 sm:grid-cols-2">
-                {service.features.map((feat) => (
-                  <div key={feat} className="flex items-center gap-3">
-                    <span
-                      className="h-1.5 w-1.5 shrink-0 rounded-full"
-                      style={{ background: isDark ? "#ffffff" : "#111111" }}
-                    />
-                    <span className="text-sm font-normal tracking-wide md:text-[16px]">
-                      {feat}
-                    </span>
-                  </div>
-                ))}
-              </div>
+            <h2 className="mb-4 font-gra text-4xl leading-none font-semibold tracking-[-1px] lg:text-5xl">
+              {service.title}
+            </h2>
+            <p className="mb-10 max-w-[90%] text-sm leading-relaxed font-normal text-current md:text-[16px]">
+              {service.description}
+            </p>
+            <div className="mb-10 grid grid-cols-1 gap-x-4 gap-y-1 sm:grid-cols-2">
+              {service.features.map((feat: string) => (
+                <div key={feat} className="flex items-center gap-3">
+                  <span
+                    className="h-1.5 w-1.5 shrink-0 rounded-full"
+                    style={{ background: isDark ? "#ffffff" : "#111111" }}
+                  />
+                  <span className="text-sm font-normal tracking-wide md:text-[16px]">
+                    {feat}
+                  </span>
+                </div>
+              ))}
             </div>
-
             <button
-              className="mt-auto self-start rounded-full px-7 py-3.5 font-mono text-[15px] tracking-[1px] transition-transform duration-200 hover:-translate-y-0.5 active:translate-y-0"
-              style={{
-                background: service.ctaBg,
-                color: service.ctaText,
-              }}
+              className="mt-auto self-start rounded-full px-7 py-3.5 font-mono text-[15px] tracking-[1px]"
+              style={{ background: service.ctaBg, color: service.ctaText }}
             >
               {service.cta}
             </button>
           </div>
-
           <div
             className="relative hidden items-center justify-center overflow-hidden lg:flex"
             style={{ background: service.rightBg }}
           >
             <Image
               src={service.image}
-              alt={`${service.title} visuals`}
-              className="h-full max-h-130 w-full object-cover object-center"
+              alt={service.title}
+              className="h-full max-h-130 w-full object-cover"
               height={600}
               width={776}
             />
@@ -207,8 +210,15 @@ function Card({
   )
 }
 
-export default function StackCards() {
+export default function StackCards({ priorityId }: { priorityId?: number }) {
   const containerRef = useRef<HTMLDivElement>(null)
+
+  // Reorder logic: Move the priorityId to the start of the array
+  const sortedServices = priorityId
+    ? [...servicesData].sort((a, b) =>
+        a.id === priorityId ? -1 : b.id === priorityId ? 1 : 0
+      )
+    : servicesData
 
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -218,24 +228,18 @@ export default function StackCards() {
   return (
     <section className="relative pt-12" id="services">
       <div ref={containerRef} className="container">
-        <motion.h2
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-50px" }}
-          transition={{ duration: 0.7, ease: "easeOut" }}
-          className="mb-14 font-mono text-[40px] leading-[1.1] tracking-tight text-[#111111] md:text-[56px]"
-        >
-          From startup to enterprise, grow your business{" "}
+        <motion.h2 className="mb-14 font-mono text-[40px] leading-[1.1] tracking-tight text-[#111111] md:text-[56px]">
+          Scalable digital solutions{" "}
           <span className="bg-linear-to-tl from-[#0091DA] via-[#143DA7] to-[#080C5E] bg-clip-text text-transparent">
-            with fast and scalable digital solutions!
+            for your business growth.
           </span>
         </motion.h2>
-        {services.map((service, index) => (
+        {sortedServices.map((service, index) => (
           <Card
             key={service.id}
             service={service}
             index={index}
-            total={services.length}
+            total={sortedServices.length}
             scrollYProgress={scrollYProgress}
           />
         ))}

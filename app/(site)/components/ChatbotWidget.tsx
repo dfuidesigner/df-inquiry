@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useRef } from "react"
-import { motion, AnimatePresence } from "framer-motion"
+import { m as motion, AnimatePresence } from "framer-motion"
 import { MessageSquare, X, Send, Phone, RefreshCw, Loader2 } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"

@@ -1,7 +1,7 @@
 "use client"
 
 import { AnimatedButton } from "@/components/common/AnimatedButton"
-import { motion } from "framer-motion"
+import {  m as motion } from "framer-motion"
 import { CheckCircle2 } from "lucide-react"
 
 const benefits = [

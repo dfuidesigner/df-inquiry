@@ -1,9 +1,18 @@
 "use client"
 
 import { AnimatedButton } from "@/components/common/AnimatedButton"
-import { motion } from "framer-motion"
+import { m as motion } from "framer-motion"
 import Image from "next/image"
 import { CheckCircle2 } from "lucide-react"
+import React from "react"
+
+interface AboutSectionProps {
+  badgeText?: string
+  title: React.ReactNode
+  descriptions: string[]
+  additionalLine?: string
+  pointers: string[]
+}
 
 const clients = [
   {
@@ -42,16 +51,8 @@ const clients = [
   { id: 26, src: "/images/client/blue-bell.png", alt: "Blue Bells" },
   { id: 27, src: "/images/client/p4psi.jpg", alt: "p4psi" },
   { id: 28, src: "/images/client/prakash.svg", alt: "Prakash" },
-  { id: 28, src: "/images/client/AGRI-PRO.jpg", alt: "AGRI-PRO" },
-  { id: 28, src: "/images/client/century-led.png", alt: "century-led" },
-]
-
-const pointers = [
-  "Since 2019, delivering powerful digital solutions for startups, SMEs, and enterprises",
-  "Custom Web, Mobile App, SaaS & AI Automation Development",
-  "SEO-Friendly, Fast & Scalable Technology Solutions",
-  "Result-Driven Digital Marketing & Lead Generation Strategies",
-  "Trusted Partner for Business Growth, Automation & Digital Transformation",
+  { id: 29, src: "/images/client/AGRI-PRO.jpg", alt: "AGRI-PRO" },
+  { id: 30, src: "/images/client/century-led.png", alt: "century-led" },
 ]
 
 const fadeUp = {
@@ -89,13 +90,19 @@ const logoItemVariants = {
   },
 }
 
-export default function AboutSection() {
+export default function AboutSection({
+  badgeText = "Available for new projects",
+  title,
+  descriptions,
+  additionalLine,
+  pointers,
+}: AboutSectionProps) {
   return (
     <div className="bg-white text-zinc-900 selection:bg-zinc-200">
       <section className="px-6 py-24 md:py-32 lg:px-8" id="about">
         <div className="mx-auto max-w-7xl">
           <div className="flex flex-col items-start gap-16 lg:flex-row lg:gap-24">
-            {/* LEFT COLUMN: Combined Text content */}
+            {/* LEFT COLUMN */}
             <motion.div
               initial="hidden"
               whileInView="visible"
@@ -112,7 +119,7 @@ export default function AboutSection() {
                   <span className="relative inline-flex h-2 w-2 rounded-full bg-[#143DA7]"></span>
                 </span>
                 <span className="font-gra text-xs font-medium text-gray-700">
-                  Available for new projects
+                  {badgeText}
                 </span>
               </motion.div>
 
@@ -120,35 +127,28 @@ export default function AboutSection() {
                 variants={fadeUp}
                 className="mb-10 font-mono text-4xl leading-[1.1] text-[#111] md:text-5xl lg:text-[50px]"
               >
-                Custom Software Development Company for{" "}
-                <span className="bg-linear-to-tl from-[#0091DA] via-[#143DA7] to-[#080C5E] bg-clip-text text-transparent">
-                  Web, Mobile, SaaS & AI Automation.
-                </span>
+                {title}
               </motion.h1>
 
               <div className="space-y-6">
-                <motion.p
-                  variants={fadeUp}
-                  className="text-[16px] leading-relaxed text-gray-700"
-                >
-                  Digital Fueled IT Pvt Ltd delivers scalable, future-ready
-                  software solutions designed to accelerate business growth and
-                  digital transformation. Since 2019, we have been helping
-                  startups, brands, and enterprises build powerful web
-                  applications, high-performance mobile apps, SaaS platforms,
-                  and AI-driven automation systems.
-                </motion.p>
+                {descriptions.map((desc, idx) => (
+                  <motion.p
+                    key={idx}
+                    variants={fadeUp}
+                    className="text-[16px] leading-relaxed text-gray-700"
+                  >
+                    {desc}
+                  </motion.p>
+                ))}
 
-                <motion.p
-                  variants={fadeUp}
-                  className="text-[16px] leading-relaxed text-gray-700"
-                >
-                  From custom software development and cloud-based platforms to
-                  intelligent business automation and enterprise solutions — we
-                  create secure, scalable, and user-focused digital products
-                  that improve efficiency, enhance customer experience, and
-                  drive long-term success.
-                </motion.p>
+                {additionalLine && (
+                  <motion.p
+                    variants={fadeUp}
+                    className="text-[16px] leading-relaxed font-medium text-gray-800"
+                  >
+                    {additionalLine}
+                  </motion.p>
+                )}
               </div>
 
               <motion.div
@@ -159,7 +159,6 @@ export default function AboutSection() {
               </motion.div>
             </motion.div>
 
-            {/* RIGHT COLUMN: Pointers List */}
             <motion.div
               initial="hidden"
               whileInView="visible"
