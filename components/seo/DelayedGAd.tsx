@@ -9,7 +9,7 @@ export function GoogleAdsTag() {
         src="https://www.googletagmanager.com/gtag/js?id=AW-18024116278"
         strategy="afterInteractive"
       />
-      <Script id="google-ads" strategy="afterInteractive">
+      <Script id="google-ads">
         {`
           window.dataLayer = window.dataLayer || [];
           function gtag(){dataLayer.push(arguments);}
