@@ -2,19 +2,14 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { m as motion, AnimatePresence } from "framer-motion"
-import { Menu, X, Loader2 } from "lucide-react"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useRouter } from "next/navigation"
-import { toast } from "sonner"
+import { m as motion } from "framer-motion"
+import { Menu } from "lucide-react"
+import Image from "next/image"
 
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import Image from "next/image"
-import { AnimatedButton } from "../common/AnimatedButton"
-import { contactSchema, type ContactFormValues } from "@/lib/validations"
-import { submitContactForm } from "@/app/(site)/actions"
+import { AnimatedButton } from "@/components/common/AnimatedButton"
+import { useEnquiry } from "@/contexts/EnquiryContext"
 
 const mainLinks = [
   { title: "Services", href: "#services" },
@@ -37,349 +32,117 @@ const WhatsAppIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
 
 export function Navbar() {
   const [isOpen, setIsOpen] = React.useState(false)
-  const [isEnquiryOpen, setIsEnquiryOpen] = React.useState(false)
   const [hoveredItem, setHoveredItem] = React.useState<string | null>(null)
-  const [isSubmitting, setIsSubmitting] = React.useState(false)
 
-  const router = useRouter()
-
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<ContactFormValues>({
-    resolver: zodResolver(contactSchema),
-    defaultValues: {
-      name: "",
-      email: "",
-      phone: "",
-      service: "other", // Defaulting to 'other' since it's not a dropdown in the popup
-      message: "",
-      website: "",
-      formStart: "",
-      source: "Enquiry Popup",
-    },
-  })
+  // Bring in the global modal trigger
+  const { openEnquiry } = useEnquiry()
 
   const phoneNumber = "+91 7838 152 753"
   const whatsappLink = `https://wa.me/${phoneNumber.replace(/\D/g, "")}`
 
-  React.useEffect(() => {
-    const hasSeenPopup = sessionStorage.getItem("enquiry_popup_seen")
-
-    if (!hasSeenPopup) {
-      const timer = setTimeout(() => {
-        setIsEnquiryOpen(true)
-        sessionStorage.setItem("enquiry_popup_seen", "true")
-      }, 3000)
-
-      return () => clearTimeout(timer)
-    }
-  }, [])
-
-  React.useEffect(() => {
-    if (isEnquiryOpen) {
-      document.body.style.overflow = "hidden"
-    } else {
-      document.body.style.overflow = "unset"
-    }
-  }, [isEnquiryOpen])
-
-  const onSubmit = async (data: ContactFormValues) => {
-    setIsSubmitting(true)
-    try {
-      let parsedUtmData: Record<string, string> = {}
-      if (typeof window !== "undefined") {
-        try {
-          const storedUtm = localStorage.getItem("digitalFueledSource")
-          if (storedUtm) {
-            parsedUtmData = JSON.parse(storedUtm)
-          }
-        } catch (error) {
-          console.error("Failed to parse UTM data:", error)
-        }
-      }
-
-      data.utm_source = parsedUtmData.utm_source || "Direct"
-      data.utm_medium = parsedUtmData.utm_medium || ""
-      data.utm_campaign = parsedUtmData.utm_campaign || ""
-      data.utm_content = parsedUtmData.utm_content || ""
-      data.utm_term = parsedUtmData.utm_term || ""
-
-      const response = await submitContactForm(data)
-
-      if (response.success) {
-        setIsEnquiryOpen(false)
-        reset()
-        router.push("/thank-you")
-      } else {
-        toast.error(
-          response.error ||
-            "Message sent successfully! We will be in touch soon."
-        )
-        setIsSubmitting(false)
-      }
-    } catch (error) {
-      console.error("Submission error:", error)
-      toast.error("Failed to send message.")
-      setIsSubmitting(false)
-    }
-  }
-
   return (
-    <>
-      <header
-        className="sticky top-0 z-40 w-full border-b border-gray-200 bg-white/90 backdrop-blur-md transition-all"
-        onMouseLeave={() => setHoveredItem(null)}
-      >
-        <div className="container mx-auto flex h-20 items-center justify-between px-3 md:px-6">
-          <Link
-            href="/"
-            className="relative z-50 flex shrink-0 items-center transition-transform hover:scale-105"
-          >
-            <Image
-              src="/images/logo.png"
-              width={160}
-              height={45}
-              alt="Digital Fueled"
-              className="w-30 object-contain lg:w-40"
-            />
-          </Link>
+    <header
+      className="sticky top-0 z-40 w-full border-b border-gray-200 bg-white/90 backdrop-blur-md transition-all"
+      onMouseLeave={() => setHoveredItem(null)}
+    >
+      <div className="container mx-auto flex h-20 items-center justify-between px-3 md:px-6">
+        <Link
+          href="/"
+          className="relative z-50 flex shrink-0 items-center transition-transform hover:scale-105"
+        >
+          <Image
+            src="/images/logo.png"
+            width={160}
+            height={45}
+            alt="Digital Fueled"
+            className="w-30 object-contain lg:w-40"
+          />
+        </Link>
 
-          <nav className="hidden lg:flex lg:items-center lg:gap-2">
-            {mainLinks.map((link) => (
-              <Link
-                key={link.title}
-                href={link.href}
-                className="relative rounded-full px-4 py-2 text-[14px] font-bold tracking-wide text-gray-900 uppercase transition-colors"
-                onMouseEnter={() => setHoveredItem(link.title)}
-              >
-                {hoveredItem === link.title && (
-                  <motion.div
-                    layoutId="nav-pill"
-                    className="absolute inset-0 -z-10 rounded-full bg-gray-100/80"
-                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                  />
-                )}
-                {link.title}
-              </Link>
-            ))}
-          </nav>
-
-          {/* ACTIONS */}
-          <div className="relative z-50 flex items-center gap-3 lg:gap-8">
-            <div className="flex md:hidden">
-              <AnimatedButton href="#form">
-                <span className="text-xs">Start A Project</span>
-              </AnimatedButton>
-            </div>
-            <div className="hidden font-gra lg:flex">
-              <Link
-                href={whatsappLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 rounded-full bg-[#25D366] px-5 py-2.5 text-[14px] font-bold tracking-wide text-white uppercase transition-transform hover:scale-105 hover:bg-[#20b958]"
-              >
-                <WhatsAppIcon className="h-5 w-5" />
-                <span className="whitespace-nowrap">{phoneNumber}</span>
-              </Link>
-            </div>
-
-            <Sheet open={isOpen} onOpenChange={setIsOpen}>
-              <SheetTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="rounded-full hover:bg-gray-100 lg:hidden"
-                >
-                  <Menu className="h-6 w-6" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="right" className="w-full bg-white px-5 pt-20">
-                <div className="flex flex-col gap-6 px-2">
-                  <div className="mb-4">
-                    <p className="mb-4 text-xs font-bold tracking-widest text-gray-400 uppercase">
-                      Menu
-                    </p>
-                    {mainLinks.map((link) => (
-                      <Link
-                        key={link.title}
-                        href={link.href}
-                        onClick={() => setIsOpen(false)}
-                        className="block py-2 text-2xl font-bold tracking-tight text-gray-900 hover:text-[#86ef47]"
-                      >
-                        {link.title}
-                      </Link>
-                    ))}
-                  </div>
-
-                  <div className="mt-4 flex flex-col gap-6 border-t border-gray-100 pt-8">
-                    <Link
-                      href={whatsappLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex w-full items-center justify-center gap-2 rounded-full bg-[#25D366] px-5 py-3.5 text-[14px] font-bold tracking-wide text-white uppercase transition-transform active:scale-95"
-                    >
-                      <WhatsAppIcon className="h-5 w-5" />
-                      Connect on WhatsApp
-                    </Link>
-                  </div>
-                </div>
-              </SheetContent>
-            </Sheet>
-          </div>
-        </div>
-      </header>
-
-      <AnimatePresence>
-        {isEnquiryOpen && (
-          <div className="fixed inset-0 z-100 flex items-center justify-center p-4 sm:p-6">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsEnquiryOpen(false)}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm"
-            />
-
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-md overflow-hidden rounded-2xl bg-white p-6 shadow-2xl sm:p-8"
+        <nav className="hidden lg:flex lg:items-center lg:gap-2">
+          {mainLinks.map((link) => (
+            <Link
+              key={link.title}
+              href={link.href}
+              className="relative rounded-full px-4 py-2 text-[14px] font-bold tracking-wide text-gray-900 uppercase transition-colors"
+              onMouseEnter={() => setHoveredItem(link.title)}
             >
-              <button
-                onClick={() => setIsEnquiryOpen(false)}
-                className="absolute top-4 right-4 rounded-full p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-900"
-              >
-                <X className="h-5 w-5" />
-              </button>
-
-              <div className="mb-6">
-                <h3 className="text-2xl font-bold tracking-tight text-gray-900">
-                  Quick Enquiry
-                </h3>
-                <p className="mt-1 text-sm text-gray-500">
-                  Leave your details and we&apos;ll get back to you shortly.
-                </p>
-              </div>
-
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                {/* Honeypot field from original setup */}
-                <input
-                  type="text"
-                  {...register("website")}
-                  className="hidden"
-                  tabIndex={-1}
-                  autoComplete="off"
+              {hoveredItem === link.title && (
+                <motion.div
+                  layoutId="nav-pill"
+                  className="absolute inset-0 -z-10 rounded-full bg-gray-100/80"
+                  transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                 />
+              )}
+              {link.title}
+            </Link>
+          ))}
+        </nav>
 
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-gray-700 uppercase">
-                    Name
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Enter Name"
-                    {...register("name")}
-                    className={`w-full rounded-md border px-3 py-2.5 text-sm transition-colors outline-none focus:border-black ${
-                      errors.name
-                        ? "border-red-500 bg-red-50"
-                        : "border-gray-200"
-                    }`}
-                  />
-                  {errors.name && (
-                    <span className="text-[10px] text-red-500">
-                      {errors.name.message}
-                    </span>
-                  )}
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-gray-700 uppercase">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    placeholder="Enter Email"
-                    {...register("email")}
-                    className={`w-full rounded-md border px-3 py-2.5 text-sm transition-colors outline-none focus:border-black ${
-                      errors.email
-                        ? "border-red-500 bg-red-50"
-                        : "border-gray-200"
-                    }`}
-                  />
-                  {errors.email && (
-                    <span className="text-[10px] text-red-500">
-                      {errors.email.message}
-                    </span>
-                  )}
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-gray-700 uppercase">
-                    Phone
-                  </label>
-                  <input
-                    type="tel"
-                    placeholder="+91"
-                    {...register("phone")}
-                    className={`w-full rounded-md border px-3 py-2.5 text-sm transition-colors outline-none focus:border-black ${
-                      errors.phone
-                        ? "border-red-500 bg-red-50"
-                        : "border-gray-200"
-                    }`}
-                  />
-                  {errors.phone && (
-                    <span className="text-[10px] text-red-500">
-                      {errors.phone.message}
-                    </span>
-                  )}
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-gray-700 uppercase">
-                    How can we help?
-                  </label>
-                  <textarea
-                    rows={3}
-                    placeholder="Briefly describe your project..."
-                    {...register("message")}
-                    className={`w-full resize-none rounded-md border px-3 py-2.5 text-sm transition-colors outline-none focus:border-black ${
-                      errors.message
-                        ? "border-red-500 bg-red-50"
-                        : "border-gray-200"
-                    }`}
-                  />
-                  {errors.message && (
-                    <span className="text-[10px] text-red-500">
-                      {errors.message.message}
-                    </span>
-                  )}
-                </div>
-
-                <div className="pt-2">
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="flex w-full items-center justify-center gap-2 rounded-full bg-[#1e5bce] py-3 text-[14px] font-bold text-white transition-all hover:bg-blue-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />{" "}
-                        Submitting...
-                      </>
-                    ) : (
-                      "Submit Enquiry"
-                    )}
-                  </button>
-                </div>
-              </form>
-            </motion.div>
+        {/* ACTIONS */}
+        <div className="relative z-50 flex items-center gap-3 lg:gap-8">
+          <div className="flex md:hidden">
+            {/* Updated AnimatedButton to act as a button and trigger modal */}
+            <AnimatedButton as="button" onClick={() => openEnquiry("other")}>
+              <span className="text-xs">Start A Project</span>
+            </AnimatedButton>
           </div>
-        )}
-      </AnimatePresence>
-    </>
+          <div className="hidden font-gra lg:flex">
+            <Link
+              href={whatsappLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 rounded-full bg-[#25D366] px-5 py-2.5 text-[14px] font-bold tracking-wide text-white uppercase transition-transform hover:scale-105 hover:bg-[#20b958]"
+            >
+              <WhatsAppIcon className="h-5 w-5" />
+              <span className="whitespace-nowrap">{phoneNumber}</span>
+            </Link>
+          </div>
+
+          <Sheet open={isOpen} onOpenChange={setIsOpen}>
+            <SheetTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full hover:bg-gray-100 lg:hidden"
+              >
+                <Menu className="h-6 w-6" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-full bg-white px-5 pt-20">
+              <div className="flex flex-col gap-6 px-2">
+                <div className="mb-4">
+                  <p className="mb-4 text-xs font-bold tracking-widest text-gray-400 uppercase">
+                    Menu
+                  </p>
+                  {mainLinks.map((link) => (
+                    <Link
+                      key={link.title}
+                      href={link.href}
+                      onClick={() => setIsOpen(false)}
+                      className="block py-2 text-2xl font-bold tracking-tight text-gray-900 hover:text-[#86ef47]"
+                    >
+                      {link.title}
+                    </Link>
+                  ))}
+                </div>
+
+                <div className="mt-4 flex flex-col gap-6 border-t border-gray-100 pt-8">
+                  <Link
+                    href={whatsappLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex w-full items-center justify-center gap-2 rounded-full bg-[#25D366] px-5 py-3.5 text-[14px] font-bold tracking-wide text-white uppercase transition-transform active:scale-95"
+                  >
+                    <WhatsAppIcon className="h-5 w-5" />
+                    Connect on WhatsApp
+                  </Link>
+                </div>
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
+      </div>
+    </header>
   )
 }

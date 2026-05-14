@@ -4,6 +4,8 @@ import { SourceTracker } from "@/components/source-tracker"
 import { Toaster } from "sonner"
 import { MotionProvider } from "@/components/provider/MotionProvider"
 import { DelayedGads } from "@/components/seo/DelayedGAd"
+import { EnquiryProvider } from "@/contexts/EnquiryContext"
+import { EnquiryModal } from "@/components/common/EnquiryModal"
 export const metadata = {
   title: "Digital Fueled",
   description: "Digital Fueled",
@@ -17,12 +19,15 @@ export default async function SiteLayout({
   return (
     <div className="overflow-x-clip antialiased">
       <MotionProvider>
-        <Navbar />
-        {children}
-        <Footer />
-        <SourceTracker />
-        <Toaster />
-        <DelayedGads />
+        <EnquiryProvider>
+          <Navbar />
+          {children}
+          <Footer />
+          <SourceTracker />
+          <Toaster />
+          <DelayedGads />
+          <EnquiryModal />
+        </EnquiryProvider>
       </MotionProvider>
     </div>
   )

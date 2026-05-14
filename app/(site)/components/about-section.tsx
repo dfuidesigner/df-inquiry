@@ -1,10 +1,52 @@
 "use client"
 
 import { AnimatedButton } from "@/components/common/AnimatedButton"
-import { m as motion } from "framer-motion"
+import { m as motion, useInView } from "framer-motion"
 import Image from "next/image"
 import { CheckCircle2 } from "lucide-react"
-import React from "react"
+import React, { useEffect, useRef } from "react"
+import { useEnquiry } from "@/contexts/EnquiryContext"
+
+function AnimatedCounter({
+  from = 0,
+  to,
+  duration = 2,
+}: {
+  from?: number
+  to: number
+  duration?: number
+}) {
+  const ref = useRef<HTMLSpanElement>(null)
+  const inView = useInView(ref, { once: true, margin: "-50px" })
+
+  useEffect(() => {
+    if (!inView) return
+
+    let startTime: number
+    let animationFrame: number
+
+    const animate = (timestamp: number) => {
+      if (!startTime) startTime = timestamp
+      const progress = Math.min((timestamp - startTime) / (duration * 1000), 1)
+
+      const easeProgress = 1 - Math.pow(1 - progress, 4)
+      const currentCount = Math.floor(easeProgress * (to - from) + from)
+
+      if (ref.current) {
+        ref.current.textContent = currentCount.toString()
+      }
+
+      if (progress < 1) {
+        animationFrame = requestAnimationFrame(animate)
+      }
+    }
+
+    animationFrame = requestAnimationFrame(animate)
+    return () => cancelAnimationFrame(animationFrame)
+  }, [inView, from, to, duration])
+
+  return <span ref={ref}>{from}</span>
+}
 
 interface AboutSectionProps {
   badgeText?: string
@@ -97,6 +139,8 @@ export default function AboutSection({
   additionalLine,
   pointers,
 }: AboutSectionProps) {
+  const { openEnquiry } = useEnquiry()
+
   return (
     <div className="bg-white text-zinc-900 selection:bg-zinc-200">
       <section className="px-6 py-24 md:py-32 lg:px-8" id="about">
@@ -155,7 +199,13 @@ export default function AboutSection({
                 variants={fadeUp}
                 className="mt-10 flex flex-wrap items-center gap-4"
               >
-                <AnimatedButton href="#contact">Book a call</AnimatedButton>
+                {/* Updated AnimatedButton to trigger modal */}
+                <AnimatedButton
+                  as="button"
+                  onClick={() => openEnquiry("other")}
+                >
+                  Book a call
+                </AnimatedButton>
               </motion.div>
             </motion.div>
 
@@ -184,6 +234,70 @@ export default function AboutSection({
               </div>
             </motion.div>
           </div>
+        </div>
+      </section>
+
+      <section className="border-t border-zinc-100 px-6 py-24 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={staggerContainer}
+            className="grid grid-cols-1 gap-x-12 gap-y-16 md:grid-cols-2 lg:grid-cols-4"
+          >
+            <motion.div variants={fadeUp} className="flex flex-col">
+              <h3 className="mb-4 flex items-baseline text-6xl font-light tracking-tighter text-zinc-900 md:text-7xl">
+                <AnimatedCounter to={5} duration={2} />
+                <span className="text-zinc-400">+</span>
+              </h3>
+              <p className="mb-2 font-mono text-sm tracking-widest text-zinc-900 uppercase">
+                Years
+              </p>
+              <p className="text-sm leading-relaxed text-zinc-500">
+                Of specialized expertise in digital growth.
+              </p>
+            </motion.div>
+
+            <motion.div variants={fadeUp} className="flex flex-col">
+              <h3 className="mb-4 flex items-baseline text-6xl font-light tracking-tighter text-zinc-900 md:text-7xl">
+                <AnimatedCounter to={200} duration={2.5} />
+                <span className="text-zinc-400">+</span>
+              </h3>
+              <p className="mb-2 font-mono text-sm tracking-widest text-zinc-900 uppercase">
+                Clients Served
+              </p>
+              <p className="text-sm leading-relaxed text-zinc-500">
+                30% International <br /> 70% Indian Clientele
+              </p>
+            </motion.div>
+
+            <motion.div variants={fadeUp} className="flex flex-col">
+              <h3 className="mb-4 flex items-baseline text-6xl font-light tracking-tighter text-zinc-900 md:text-7xl">
+                <AnimatedCounter to={50} duration={2} />
+                <span className="text-zinc-400">+</span>
+              </h3>
+              <p className="mb-2 font-mono text-sm tracking-widest text-zinc-900 uppercase">
+                Recognitions
+              </p>
+              <p className="text-sm leading-relaxed text-zinc-500">
+                Awards across the industry for design and execution.
+              </p>
+            </motion.div>
+
+            <motion.div variants={fadeUp} className="flex flex-col">
+              <h3 className="mb-4 flex items-baseline text-6xl font-light tracking-tighter text-zinc-900 md:text-7xl">
+                <AnimatedCounter to={750} duration={3} />
+                <span className="text-zinc-400">+</span>
+              </h3>
+              <p className="mb-2 font-mono text-sm tracking-widest text-zinc-900 uppercase">
+                Stories Told
+              </p>
+              <p className="text-sm leading-relaxed text-zinc-500">
+                Through campaigns across all touchpoints of the brand journey.
+              </p>
+            </motion.div>
+          </motion.div>
         </div>
       </section>
 

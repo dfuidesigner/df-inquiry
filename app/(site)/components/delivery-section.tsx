@@ -3,6 +3,7 @@
 import { AnimatedButton } from "@/components/common/AnimatedButton"
 import { m as motion } from "framer-motion"
 import { CheckCircle2 } from "lucide-react"
+import { useEnquiry } from "@/contexts/EnquiryContext"
 
 const benefits = [
   "Scalable architecture for business growth",
@@ -14,6 +15,8 @@ const benefits = [
 ]
 
 export default function WhyChooseUsSection() {
+  const { openEnquiry } = useEnquiry()
+
   return (
     <section
       className="relative overflow-hidden bg-cover bg-top bg-no-repeat px-4 py-16 font-sans text-white sm:px-6 lg:px-8"
@@ -34,7 +37,7 @@ export default function WhyChooseUsSection() {
         </motion.h2>
 
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
-          {/* Left Side: Points & Description - Compacted padding */}
+          {/* Left Side: Points & Description */}
           <div className="rounded-xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm sm:p-8 lg:col-span-7">
             <motion.h3
               initial={{ opacity: 0 }}
@@ -55,7 +58,6 @@ export default function WhyChooseUsSection() {
               growth and high performance.
             </motion.p>
 
-            {/* Tightened list spacing */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {benefits.map((benefit, index) => (
                 <motion.div
@@ -75,7 +77,7 @@ export default function WhyChooseUsSection() {
             </div>
           </div>
 
-          {/* Right Side: Testimonial & CTA - Aligned and tightened */}
+          {/* Right Side: Testimonial & CTA */}
           <div className="flex flex-col justify-center lg:col-span-5 lg:pl-6">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
@@ -89,7 +91,12 @@ export default function WhyChooseUsSection() {
               </p>
 
               <div className="inline-block">
-                <AnimatedButton href="#contact" variant="light">
+                {/* Updated AnimatedButton to trigger modal */}
+                <AnimatedButton
+                  as="button"
+                  onClick={() => openEnquiry("other")}
+                  variant="light"
+                >
                   Book a call
                 </AnimatedButton>
               </div>

@@ -1,14 +1,18 @@
-import AboutSection from "./components/about-section"
-import Chatbot from "./components/ChatbotWidget"
-import ConsultationSection from "./components/consultation.section"
-import ContactSection from "./components/contact-section"
-import DeliverySection from "./components/delivery-section"
-import FAQSection from "./components/faq-section"
-import PortfolioSection from "./components/portfolio-section"
-import StackCards from "./components/stack-card"
-import TechStackSection from "./components/teach-stack-section"
-import TestimonialCarousel from "./components/testimonial"
+import dynamic from "next/dynamic"
 
+import ConsultationSection from "./components/consultation.section"
+import StackCards from "./components/stack-card"
+
+const AboutSection = dynamic(() => import("./components/about-section"))
+const PortfolioSection = dynamic(() => import("./components/portfolio-section"))
+const DeliverySection = dynamic(() => import("./components/delivery-section"))
+const TechStackSection = dynamic(
+  () => import("./components/teach-stack-section")
+)
+const TestimonialCarousel = dynamic(() => import("./components/testimonial"))
+const FAQSection = dynamic(() => import("./components/faq-section"))
+const ContactSection = dynamic(() => import("./components/contact-section"))
+import ChatbotWrapper from "./components/chatbot-wrapper"
 const HomePage = () => {
   return (
     <main>
@@ -44,7 +48,7 @@ const HomePage = () => {
       <TestimonialCarousel />
       <FAQSection />
       <ContactSection />
-      <Chatbot />
+      <ChatbotWrapper />
     </main>
   )
 }

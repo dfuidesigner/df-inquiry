@@ -1,63 +1,69 @@
-import AboutSection from "../components/about-section"
-import Chatbot from "../components/ChatbotWidget"
+import dynamic from "next/dynamic"
 import ConsultationSection from "../components/consultation.section"
-import ContactSection from "../components/contact-section"
-import DeliverySection from "../components/delivery-section"
-import FAQSection from "../components/faq-section"
-import PortfolioSection from "../components/portfolio-section"
 import StackCards from "../components/stack-card"
-import TechStackSection from "../components/teach-stack-section"
-import TestimonialCarousel from "../components/testimonial"
+import ChatbotWrapper from "../components/chatbot-wrapper"
+
+const AboutSection = dynamic(() => import("../components/about-section"))
+const PortfolioSection = dynamic(
+  () => import("../components/portfolio-section")
+)
+const DeliverySection = dynamic(() => import("../components/delivery-section"))
+const TechStackSection = dynamic(
+  () => import("../components/teach-stack-section")
+)
+const TestimonialCarousel = dynamic(() => import("../components/testimonial"))
+const FAQSection = dynamic(() => import("../components/faq-section"))
+const ContactSection = dynamic(() => import("../components/contact-section"))
 
 export const metadata = {
-  title: "Custom Mobile App Development Company in Delhi NCR | Digital Fueled",
+  title: "Digital Marketing Company in Delhi NCR | Digital Fueled",
   description:
-    "We build high-performance, scalable, and user-friendly mobile applications for startups, businesses, and enterprises.",
+    "Performance marketing & lead generation experts helping businesses grow online.",
 }
 
-const MobileAppPage = () => {
+const DigitalMarketingPage = () => {
   return (
     <main>
       <ConsultationSection
         title={
           <>
-            Custom Mobile App Development Company in Delhi NCR –{" "}
+            Digital Marketing Company in Delhi NCR –{" "}
             <span className="text-[#3b82f6]">
-              Android, iOS & Cross-Platform Apps
+              Performance Marketing & Lead Generation Experts
             </span>
           </>
         }
         descriptions={[
-          "We build high-performance, scalable, and user-friendly mobile applications for startups, businesses, and enterprises. From idea validation and UI/UX design to development, testing, deployment, and post-launch support, our team delivers secure and feature-rich Android, iOS, and cross-platform mobile apps tailored to your business goals.",
+          "We offer complete digital marketing services to help businesses grow online, generate quality leads, and increase brand visibility. Our team specializes in SEO, social media marketing, paid advertising, content marketing, and performance campaigns designed to deliver measurable business results and higher ROI.",
         ]}
       />
 
-      <StackCards priorityId={2} />
+      <StackCards priorityId={4} />
 
       <AboutSection
-        badgeText="Top App Developers"
+        badgeText="Marketing Specialists"
         title={
           <>
-            Driving Innovation with{" "}
+            Targeted Advertising &{" "}
             <span className="bg-linear-to-tl from-[#0091DA] via-[#143DA7] to-[#080C5E] bg-clip-text text-transparent">
-              Custom Mobile Solutions
+              High-Converting Solutions
             </span>
           </>
         }
         descriptions={[
-          "Delivering innovative mobile app development services with modern technology, seamless user experience, and business-focused solutions across healthcare, education, ecommerce, travel, fintech, and enterprise industries.",
+          "Driving business growth through data-driven digital marketing strategies, targeted advertising campaigns, and high-converting online marketing solutions for startups, SMEs, and enterprises across industries.",
         ]}
         pointers={[
-          "Android & iOS App Development",
-          "Flutter & React Native App Solutions",
-          "Custom UI/UX Design for Mobile Apps",
-          "Startup MVP & Enterprise App Development",
-          "API Integration & Admin Panel Development",
-          "Secure, Fast & Scalable Mobile Applications",
-          "App Store & Play Store Deployment Support",
-          "Real-Time Tracking, Chat & Payment Gateway Integration",
-          "Ongoing Technical Support & Maintenance",
-          "SEO-Friendly App Landing Pages & ASO Support",
+          "Complete Digital Marketing Solutions",
+          "Social Media Marketing & Management",
+          "Google Ads & PPC Campaign Management",
+          "Facebook & Instagram Advertising",
+          "Lead Generation & Performance Marketing",
+          "SEO & Organic Growth Strategies",
+          "Content Marketing & Creative Campaigns",
+          "Brand Awareness & Online Reputation Management",
+          "Ecommerce & Conversion-Focused Marketing",
+          "Monthly Reporting & Analytics Tracking",
         ]}
       />
 
@@ -67,9 +73,9 @@ const MobileAppPage = () => {
       <TestimonialCarousel />
       <FAQSection />
       <ContactSection />
-      <Chatbot />
+      <ChatbotWrapper />
     </main>
   )
 }
 
-export default MobileAppPage
+export default DigitalMarketingPage

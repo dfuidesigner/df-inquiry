@@ -1,6 +1,6 @@
 "use client"
 
-import {  m as motion } from "framer-motion"
+import { m as motion } from "framer-motion"
 
 const technologies = [
   { id: 1, name: "React", iconUrl: "https://cdn.simpleicons.org/react/61DAFB" },
@@ -158,6 +158,7 @@ export default function TechStackSection() {
                   style={{
                     filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.05))",
                   }}
+                  loading="lazy"
                 />
                 <span className="font-gra text-[14px] font-semibold text-gray-700 transition-colors duration-300 group-hover:text-[#0091DA]">
                   {tech.name}

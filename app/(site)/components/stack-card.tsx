@@ -8,6 +8,7 @@ import {
   MotionValue,
 } from "framer-motion"
 import Image from "next/image"
+import { useEnquiry } from "@/contexts/EnquiryContext"
 
 interface ServiceData {
   id: number
@@ -150,6 +151,7 @@ function Card({
     [1, targetScale]
   )
   const isDark = service.textColor === "#ffffff"
+  const { openEnquiry } = useEnquiry()
 
   return (
     <div
@@ -190,13 +192,16 @@ function Card({
                 </div>
               ))}
             </div>
-            <a
-              href="#contact"
+            <button
+              onClick={(e) => {
+                e.preventDefault()
+                openEnquiry(service.title)
+              }}
               className="mt-auto self-start rounded-full px-7 py-3.5 font-mono text-[15px] tracking-[1px]"
               style={{ background: service.ctaBg, color: service.ctaText }}
             >
               {service.cta}
-            </a>
+            </button>
           </div>
           <div
             className="relative hidden items-center justify-center overflow-hidden lg:flex"
@@ -234,12 +239,12 @@ export default function StackCards({ priorityId }: { priorityId?: number }) {
   return (
     <section className="relative pt-12" id="services">
       <div ref={containerRef} className="container">
-        <motion.h2 className="mb-14 font-mono text-[40px] leading-[1.1] tracking-tight text-[#111111] md:text-[56px]">
+        <h2 className="mb-14 font-mono text-[40px] leading-[1.1] tracking-tight text-[#111111] md:text-[56px]">
           Scalable digital solutions{" "}
           <span className="bg-linear-to-tl from-[#0091DA] via-[#143DA7] to-[#080C5E] bg-clip-text text-transparent">
             for your business growth.
           </span>
-        </motion.h2>
+        </h2>
         {sortedServices.map((service, index) => (
           <Card
             key={service.id}
