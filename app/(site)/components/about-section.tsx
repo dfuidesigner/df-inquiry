@@ -248,7 +248,7 @@ export default function AboutSection({
           >
             <motion.div variants={fadeUp} className="flex flex-col">
               <h3 className="mb-4 flex items-baseline text-6xl font-light tracking-tighter text-zinc-900 md:text-7xl">
-                <AnimatedCounter to={5} duration={2} />
+                <AnimatedCounter to={8} duration={2} />
                 <span className="text-zinc-400">+</span>
               </h3>
               <p className="mb-2 font-mono text-sm tracking-widest text-zinc-900 uppercase">
@@ -261,7 +261,7 @@ export default function AboutSection({
 
             <motion.div variants={fadeUp} className="flex flex-col">
               <h3 className="mb-4 flex items-baseline text-6xl font-light tracking-tighter text-zinc-900 md:text-7xl">
-                <AnimatedCounter to={200} duration={2.5} />
+                <AnimatedCounter to={300} duration={2.5} />
                 <span className="text-zinc-400">+</span>
               </h3>
               <p className="mb-2 font-mono text-sm tracking-widest text-zinc-900 uppercase">
@@ -274,7 +274,7 @@ export default function AboutSection({
 
             <motion.div variants={fadeUp} className="flex flex-col">
               <h3 className="mb-4 flex items-baseline text-6xl font-light tracking-tighter text-zinc-900 md:text-7xl">
-                <AnimatedCounter to={50} duration={2} />
+                <AnimatedCounter to={10} duration={2} />
                 <span className="text-zinc-400">+</span>
               </h3>
               <p className="mb-2 font-mono text-sm tracking-widest text-zinc-900 uppercase">
@@ -287,7 +287,7 @@ export default function AboutSection({
 
             <motion.div variants={fadeUp} className="flex flex-col">
               <h3 className="mb-4 flex items-baseline text-6xl font-light tracking-tighter text-zinc-900 md:text-7xl">
-                <AnimatedCounter to={750} duration={3} />
+                <AnimatedCounter to={250} duration={3} />
                 <span className="text-zinc-400">+</span>
               </h3>
               <p className="mb-2 font-mono text-sm tracking-widest text-zinc-900 uppercase">

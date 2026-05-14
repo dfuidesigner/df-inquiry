@@ -13,6 +13,10 @@ const TestimonialCarousel = dynamic(() => import("./components/testimonial"))
 const FAQSection = dynamic(() => import("./components/faq-section"))
 const ContactSection = dynamic(() => import("./components/contact-section"))
 import ChatbotWrapper from "./components/chatbot-wrapper"
+
+export const metadata = {
+  title: "Website Designing & Digital Marketing Agency in Delhi",
+}
 const HomePage = () => {
   return (
     <main>

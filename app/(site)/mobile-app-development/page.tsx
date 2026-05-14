@@ -16,7 +16,7 @@ const FAQSection = dynamic(() => import("../components/faq-section"))
 const ContactSection = dynamic(() => import("../components/contact-section"))
 
 export const metadata = {
-  title: "Digital Marketing Company in Delhi NCR | Digital Fueled",
+  title: "Mobile App Development Services Delhi | Digital Fueled",
   description:
     "Performance marketing & lead generation experts helping businesses grow online.",
 }

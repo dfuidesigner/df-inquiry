@@ -3,7 +3,7 @@ import Footer from "@/components/layout/footer"
 import { SourceTracker } from "@/components/source-tracker"
 import { Toaster } from "sonner"
 import { MotionProvider } from "@/components/provider/MotionProvider"
-import { DelayedGads } from "@/components/seo/DelayedGAd"
+import { GoogleAdsTag } from "@/components/seo/DelayedGAd"
 import { EnquiryProvider } from "@/contexts/EnquiryContext"
 import { EnquiryModal } from "@/components/common/EnquiryModal"
 export const metadata = {
@@ -25,7 +25,7 @@ export default async function SiteLayout({
           <Footer />
           <SourceTracker />
           <Toaster />
-          <DelayedGads />
+          <GoogleAdsTag />
           <EnquiryModal />
         </EnquiryProvider>
       </MotionProvider>

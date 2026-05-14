@@ -142,10 +142,10 @@ export default function ConsultationSection({
 
             <div className="grid w-full max-w-112.5 grid-cols-4 gap-6 font-gra">
               {[
-                { number: "5+", label: "Years Experience" },
-                { number: "200+", label: "Clients Served" },
-                { number: "50+", label: "Recognitions" },
-                { number: "750", label: "Stories Told" },
+                { number: "8+", label: "Years Experience" },
+                { number: "300+", label: "Clients Served" },
+                { number: "10+", label: "Recognitions" },
+                { number: "250+", label: "Stories Told" },
               ].map((stat) => (
                 <div key={stat.label} className="flex flex-col gap-1">
                   <span className="text-3xl font-bold text-[#3b82f6]">
