@@ -3,6 +3,7 @@ import Footer from "@/components/layout/footer"
 import { SourceTracker } from "@/components/source-tracker"
 import { Toaster } from "sonner"
 import { MotionProvider } from "@/components/provider/MotionProvider"
+import { DelayedGads } from "@/components/seo/DelayedGAd"
 export const metadata = {
   title: "Digital Fueled",
   description: "Digital Fueled",
@@ -21,6 +22,7 @@ export default async function SiteLayout({
         <Footer />
         <SourceTracker />
         <Toaster />
+        <DelayedGads />
       </MotionProvider>
     </div>
   )

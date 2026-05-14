@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import {  m as motion } from "framer-motion"
+import { m as motion } from "framer-motion"
 import { Loader2 } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -63,7 +63,10 @@ export default function ContactSection() {
       if (response.success) {
         router.push("/thank-you")
       } else {
-        toast.success("Message sent successfully! We will be in touch soon.")
+        toast.error(
+          response.error ||
+            "Message sent successfully! We will be in touch soon."
+        )
         setIsSubmitting(false)
       }
     } catch (error) {
@@ -125,8 +128,13 @@ export default function ContactSection() {
                 </Avatar>
 
                 <div className="mr-6">
-                  <h4 className="text-[17px] font-semibold">Mohan</h4>
-                  <p className="text-[14px] text-gray-500">Founder & CEO</p>
+                  <h4 className="text-[17px] font-semibold">Mohan Sharma</h4>
+                  <a
+                    href="tel:+917838152753"
+                    className="text-[14px] text-gray-500"
+                  >
+                    +91 7838 152 753
+                  </a>{" "}
                 </div>
 
                 <button

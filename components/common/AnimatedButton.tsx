@@ -36,7 +36,7 @@ export const AnimatedButton = ({
   return (
     <Link
       href={href}
-      className={`group relative flex w-max items-center justify-center gap-2 overflow-hidden rounded-full px-7 py-3.5 text-sm leading-tight font-semibold transition-all duration-300 ${activeStyle.button}`}
+      className={`group relative flex w-max items-center justify-center gap-2 overflow-hidden rounded-full px-3 py-3.5 text-sm leading-tight font-semibold transition-all duration-300 md:px-7 ${activeStyle.button}`}
     >
       <div
         className={`absolute top-1/2 left-1/2 h-[calc(100%+4rem)] w-[calc(100%+4rem)] -translate-x-1/2 translate-y-full rounded-[100%] transition-transform duration-500 ease-out group-hover:-translate-y-1/2 ${activeStyle.hoverFill}`}

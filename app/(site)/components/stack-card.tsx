@@ -1,7 +1,12 @@
 "use client"
 
 import { useRef } from "react"
-import { useScroll, useTransform,  m as motion, MotionValue } from "framer-motion"
+import {
+  useScroll,
+  useTransform,
+  m as motion,
+  MotionValue,
+} from "framer-motion"
 import Image from "next/image"
 
 interface ServiceData {
@@ -38,7 +43,7 @@ const servicesData: ServiceData[] = [
     textColor: "#ffffff",
     ctaBg: "#ffffff",
     ctaText: "#000000",
-    image: "/images/demo/img-1 (2).avif",
+    image: "/images/website-design.png",
   },
   {
     id: 2,
@@ -55,11 +60,11 @@ const servicesData: ServiceData[] = [
     ],
     cta: "Build mobile app ↗",
     bg: "#ffffff",
-    rightBg: "#eef2ff",
+    rightBg: "#fff",
     textColor: "#111111",
     ctaBg: "#1a1a1a",
     ctaText: "#ffffff",
-    image: "/images/demo/img-1 (1).avif",
+    image: "/images/mobile-design.png",
   },
   {
     id: 3,
@@ -80,7 +85,7 @@ const servicesData: ServiceData[] = [
     textColor: "#111111",
     ctaBg: "#1a1a1a",
     ctaText: "#ffffff",
-    image: "/images/demo/img-1 (3).avif",
+    image: "/images/sass-design.png",
   },
   {
     id: 4,
@@ -101,7 +106,7 @@ const servicesData: ServiceData[] = [
     textColor: "#ffffff",
     ctaBg: "#ffffff",
     ctaText: "#000000",
-    image: "/images/demo/img-1 (4).avif",
+    image: "/images/seo-design.png",
   },
   {
     id: 5,
@@ -132,7 +137,7 @@ function Card({
   total,
   scrollYProgress,
 }: {
-  service: ServiceData 
+  service: ServiceData
   index: number
   total: number
   scrollYProgress: MotionValue<number>
@@ -185,12 +190,13 @@ function Card({
                 </div>
               ))}
             </div>
-            <button
+            <a
+              href="#contact"
               className="mt-auto self-start rounded-full px-7 py-3.5 font-mono text-[15px] tracking-[1px]"
               style={{ background: service.ctaBg, color: service.ctaText }}
             >
               {service.cta}
-            </button>
+            </a>
           </div>
           <div
             className="relative hidden items-center justify-center overflow-hidden lg:flex"
@@ -199,9 +205,9 @@ function Card({
             <Image
               src={service.image}
               alt={service.title}
-              className="h-full max-h-130 w-full object-cover"
-              height={600}
-              width={776}
+              className="h-full max-h-130 w-full object-contain"
+              height={1024}
+              width={2000}
             />
           </div>
         </div>

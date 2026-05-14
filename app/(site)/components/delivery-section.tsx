@@ -1,7 +1,7 @@
 "use client"
 
 import { AnimatedButton } from "@/components/common/AnimatedButton"
-import {  m as motion } from "framer-motion"
+import { m as motion } from "framer-motion"
 import { CheckCircle2 } from "lucide-react"
 
 const benefits = [
@@ -89,7 +89,9 @@ export default function WhyChooseUsSection() {
               </p>
 
               <div className="inline-block">
-                <AnimatedButton variant="light">Book a call</AnimatedButton>
+                <AnimatedButton href="#contact" variant="light">
+                  Book a call
+                </AnimatedButton>
               </div>
             </motion.div>
           </div>

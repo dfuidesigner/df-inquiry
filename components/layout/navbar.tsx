@@ -2,12 +2,19 @@
 
 import * as React from "react"
 import Link from "next/link"
-import {  m as motion, AnimatePresence } from "framer-motion"
-import { Menu, X, Phone } from "lucide-react"
+import { m as motion, AnimatePresence } from "framer-motion"
+import { Menu, X, Loader2 } from "lucide-react"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import Image from "next/image"
+import { AnimatedButton } from "../common/AnimatedButton"
+import { contactSchema, type ContactFormValues } from "@/lib/validations"
+import { submitContactForm } from "@/app/(site)/actions"
 
 const mainLinks = [
   { title: "Services", href: "#services" },
@@ -32,6 +39,28 @@ export function Navbar() {
   const [isOpen, setIsOpen] = React.useState(false)
   const [isEnquiryOpen, setIsEnquiryOpen] = React.useState(false)
   const [hoveredItem, setHoveredItem] = React.useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = React.useState(false)
+
+  const router = useRouter()
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<ContactFormValues>({
+    resolver: zodResolver(contactSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      phone: "",
+      service: "other", // Defaulting to 'other' since it's not a dropdown in the popup
+      message: "",
+      website: "",
+      formStart: "",
+      source: "Enquiry Popup",
+    },
+  })
 
   const phoneNumber = "+91 7838 152 753"
   const whatsappLink = `https://wa.me/${phoneNumber.replace(/\D/g, "")}`
@@ -56,6 +85,47 @@ export function Navbar() {
       document.body.style.overflow = "unset"
     }
   }, [isEnquiryOpen])
+
+  const onSubmit = async (data: ContactFormValues) => {
+    setIsSubmitting(true)
+    try {
+      let parsedUtmData: Record<string, string> = {}
+      if (typeof window !== "undefined") {
+        try {
+          const storedUtm = localStorage.getItem("digitalFueledSource")
+          if (storedUtm) {
+            parsedUtmData = JSON.parse(storedUtm)
+          }
+        } catch (error) {
+          console.error("Failed to parse UTM data:", error)
+        }
+      }
+
+      data.utm_source = parsedUtmData.utm_source || "Direct"
+      data.utm_medium = parsedUtmData.utm_medium || ""
+      data.utm_campaign = parsedUtmData.utm_campaign || ""
+      data.utm_content = parsedUtmData.utm_content || ""
+      data.utm_term = parsedUtmData.utm_term || ""
+
+      const response = await submitContactForm(data)
+
+      if (response.success) {
+        setIsEnquiryOpen(false)
+        reset()
+        router.push("/thank-you")
+      } else {
+        toast.error(
+          response.error ||
+            "Message sent successfully! We will be in touch soon."
+        )
+        setIsSubmitting(false)
+      }
+    } catch (error) {
+      console.error("Submission error:", error)
+      toast.error("Failed to send message.")
+      setIsSubmitting(false)
+    }
+  }
 
   return (
     <>
@@ -99,15 +169,12 @@ export function Navbar() {
 
           {/* ACTIONS */}
           <div className="relative z-50 flex items-center gap-3 lg:gap-8">
-            <a
-              href={`tel:${phoneNumber.replace(/\s+/g, "")}`}
-              className="flex items-center gap-1.5 text-[13px] font-bold tracking-wide text-gray-900 uppercase transition-colors hover:text-[#1e5bce] sm:text-[15px] lg:text-[18px]"
-            >
-              <Phone className="h-4 w-4 text-[#1e5bce] lg:h-5 lg:w-5" />
-              <span className="whitespace-nowrap">{phoneNumber}</span>
-            </a>
-
-            <div className="hidden lg:flex">
+            <div className="flex md:hidden">
+              <AnimatedButton href="#form">
+                <span className="text-xs">Start A Project</span>
+              </AnimatedButton>
+            </div>
+            <div className="hidden font-gra lg:flex">
               <Link
                 href={whatsappLink}
                 target="_blank"
@@ -115,7 +182,7 @@ export function Navbar() {
                 className="flex items-center gap-2 rounded-full bg-[#25D366] px-5 py-2.5 text-[14px] font-bold tracking-wide text-white uppercase transition-transform hover:scale-105 hover:bg-[#20b958]"
               >
                 <WhatsAppIcon className="h-5 w-5" />
-                WhatsApp
+                <span className="whitespace-nowrap">{phoneNumber}</span>
               </Link>
             </div>
 
@@ -198,47 +265,79 @@ export function Navbar() {
                 </p>
               </div>
 
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault()
-                  alert("Enquiry Submitted!")
-                  setIsEnquiryOpen(false)
-                }}
-                className="space-y-4"
-              >
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                {/* Honeypot field from original setup */}
+                <input
+                  type="text"
+                  {...register("website")}
+                  className="hidden"
+                  tabIndex={-1}
+                  autoComplete="off"
+                />
+
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-gray-700 uppercase">
                     Name
                   </label>
                   <input
                     type="text"
-                    required
-                    placeholder="John Doe"
-                    className="w-full rounded-md border border-gray-200 px-3 py-2.5 text-sm transition-colors outline-none focus:border-black"
+                    placeholder="Enter Name"
+                    {...register("name")}
+                    className={`w-full rounded-md border px-3 py-2.5 text-sm transition-colors outline-none focus:border-black ${
+                      errors.name
+                        ? "border-red-500 bg-red-50"
+                        : "border-gray-200"
+                    }`}
                   />
+                  {errors.name && (
+                    <span className="text-[10px] text-red-500">
+                      {errors.name.message}
+                    </span>
+                  )}
                 </div>
+
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-gray-700 uppercase">
                     Email
                   </label>
                   <input
                     type="email"
-                    required
-                    placeholder="john@example.com"
-                    className="w-full rounded-md border border-gray-200 px-3 py-2.5 text-sm transition-colors outline-none focus:border-black"
+                    placeholder="Enter Email"
+                    {...register("email")}
+                    className={`w-full rounded-md border px-3 py-2.5 text-sm transition-colors outline-none focus:border-black ${
+                      errors.email
+                        ? "border-red-500 bg-red-50"
+                        : "border-gray-200"
+                    }`}
                   />
+                  {errors.email && (
+                    <span className="text-[10px] text-red-500">
+                      {errors.email.message}
+                    </span>
+                  )}
                 </div>
+
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-gray-700 uppercase">
                     Phone
                   </label>
                   <input
                     type="tel"
-                    required
-                    placeholder="+1 234 567 890"
-                    className="w-full rounded-md border border-gray-200 px-3 py-2.5 text-sm transition-colors outline-none focus:border-black"
+                    placeholder="+91"
+                    {...register("phone")}
+                    className={`w-full rounded-md border px-3 py-2.5 text-sm transition-colors outline-none focus:border-black ${
+                      errors.phone
+                        ? "border-red-500 bg-red-50"
+                        : "border-gray-200"
+                    }`}
                   />
+                  {errors.phone && (
+                    <span className="text-[10px] text-red-500">
+                      {errors.phone.message}
+                    </span>
+                  )}
                 </div>
+
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-gray-700 uppercase">
                     How can we help?
@@ -246,15 +345,34 @@ export function Navbar() {
                   <textarea
                     rows={3}
                     placeholder="Briefly describe your project..."
-                    className="w-full resize-none rounded-md border border-gray-200 px-3 py-2.5 text-sm transition-colors outline-none focus:border-black"
+                    {...register("message")}
+                    className={`w-full resize-none rounded-md border px-3 py-2.5 text-sm transition-colors outline-none focus:border-black ${
+                      errors.message
+                        ? "border-red-500 bg-red-50"
+                        : "border-gray-200"
+                    }`}
                   />
+                  {errors.message && (
+                    <span className="text-[10px] text-red-500">
+                      {errors.message.message}
+                    </span>
+                  )}
                 </div>
+
                 <div className="pt-2">
                   <button
                     type="submit"
-                    className="w-full rounded-full bg-[#1e5bce] py-3 text-[14px] font-bold text-white transition-all hover:bg-blue-700 active:scale-[0.98]"
+                    disabled={isSubmitting}
+                    className="flex w-full items-center justify-center gap-2 rounded-full bg-[#1e5bce] py-3 text-[14px] font-bold text-white transition-all hover:bg-blue-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
                   >
-                    Submit Enquiry
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />{" "}
+                        Submitting...
+                      </>
+                    ) : (
+                      "Submit Enquiry"
+                    )}
                   </button>
                 </div>
               </form>

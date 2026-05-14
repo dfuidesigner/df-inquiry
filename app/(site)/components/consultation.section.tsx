@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import {  m as motion } from "framer-motion"
+import { m as motion } from "framer-motion"
 import { ArrowRight, Loader2 } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -68,7 +68,10 @@ export default function ConsultationSection({
       if (response.success) {
         router.push("/thank-you")
       } else {
-        toast.success("Message sent successfully! We will be in touch soon.")
+        toast.error(
+          response.error ||
+            "Message sent successfully! We will be in touch soon."
+        )
         setIsSubmitting(false)
       }
     } catch (error) {
@@ -153,9 +156,12 @@ export default function ConsultationSection({
               ))}
             </div>
 
-            <button className="mt-2 inline-flex items-center gap-2 rounded-full bg-[#1e5bce] px-6 py-3 font-gra text-[13px] font-semibold text-white shadow-xl transition-all hover:bg-blue-700">
+            <a
+              href="#form"
+              className="mt-2 inline-flex items-center gap-2 rounded-full bg-[#1e5bce] px-6 py-3 font-gra text-[13px] font-semibold text-white shadow-xl transition-all hover:bg-blue-700"
+            >
               Request A Quote <ArrowRight className="h-4 w-4" />
-            </button>
+            </a>
           </motion.div>
 
           <motion.div
@@ -165,7 +171,10 @@ export default function ConsultationSection({
             transition={{ duration: 0.7, ease: "easeOut", delay: 0.1 }}
             className="relative flex h-full w-full items-center justify-center lg:col-span-3 lg:justify-end"
           >
-            <div className="w-full max-w-150 rounded-xl bg-white p-4 font-gra shadow-[0_0_80px_10px_rgba(255,255,255,0.2)] lg:p-10">
+            <div
+              id="form"
+              className="w-full max-w-150 rounded-xl bg-white p-4 font-gra shadow-[0_0_80px_10px_rgba(255,255,255,0.2)] lg:p-10"
+            >
               <div className="mb-8 text-center text-gray-900">
                 <h3 className="text-xl font-bold">
                   Let&apos;s discuss{" "}

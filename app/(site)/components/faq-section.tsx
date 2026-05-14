@@ -1,6 +1,6 @@
 "use client"
 
-import {  m as motion } from "framer-motion"
+import { m as motion } from "framer-motion"
 import {
   Accordion,
   AccordionContent,
@@ -154,9 +154,8 @@ export default function FAQSection() {
               </div>
 
               <p className="mb-8 text-[15px] leading-relaxed font-medium text-white">
-                Hi, I&apos;m Mohan, the CEO and Founder of DigitalFueled.
-                Don&apos;t hesitate to reach out to me anytime — I&apos;m here
-                to answer all your questions!
+                Hi, Feel free to connect with us anytime — we’re here to assist
+                you with all your queries and business requirements.
               </p>
 
               <button

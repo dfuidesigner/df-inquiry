@@ -50,7 +50,6 @@ export async function submitContactForm(data: ContactFormValues) {
       }
     }
 
-    // Create inquiry
     await db.inquiry.create({
       data: {
         ...dbData,

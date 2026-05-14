@@ -155,7 +155,7 @@ export default function AboutSection({
                 variants={fadeUp}
                 className="mt-10 flex flex-wrap items-center gap-4"
               >
-                <AnimatedButton>Book a call</AnimatedButton>
+                <AnimatedButton href="#contact">Book a call</AnimatedButton>
               </motion.div>
             </motion.div>
 
