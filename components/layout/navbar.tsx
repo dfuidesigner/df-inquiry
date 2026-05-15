@@ -83,8 +83,12 @@ export function Navbar() {
         <div className="relative z-50 flex items-center gap-3 lg:gap-8">
           <div className="flex md:hidden">
             {/* Updated AnimatedButton to act as a button and trigger modal */}
-            <AnimatedButton as="button" onClick={() => openEnquiry("other")}>
-              <span className="text-xs">Start A Project</span>
+            <AnimatedButton
+              as="button"
+              onClick={() => openEnquiry("other")}
+              className="[&_img]:h-2 [&_img]:w-2"
+            >
+              <span className="text-[10px]">Start A Project</span>
             </AnimatedButton>
           </div>
           <div className="hidden font-gra lg:flex">
