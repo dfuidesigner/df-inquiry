@@ -1,3 +1,76 @@
+// "use server"
+
+// import { db } from "@/lib/db"
+// import { contactSchema, ContactFormValues } from "@/lib/validations"
+
+// export async function submitContactForm(data: ContactFormValues) {
+//   try {
+//     const parsedData = contactSchema.safeParse(data)
+
+//     if (!parsedData.success) {
+//       return {
+//         success: false,
+//         error: "Invalid data. Please check your fields.",
+//       }
+//     }
+
+//     const formData = parsedData.data
+
+//     if (formData.website && formData.website.length > 0) {
+//       console.log("Bot blocked by honeypot")
+//       return { success: true }
+//     }
+
+//     if (formData.formStart) {
+//       const startTime = parseInt(formData.formStart)
+//       const now = Date.now()
+
+//       if (now - startTime < 3000) {
+//         console.log("Bot blocked by speed check")
+
+//         return {
+//           success: false,
+//           error: "Slow down! You're moving too fast.",
+//         }
+//       }
+//     }
+
+//     const { website, formStart, ...dbData } = formData
+
+//     // const existingInquiry = await db.inquiry.findFirst({
+//     //   where: {
+//     //     OR: [{ email: dbData.email }, { phone: dbData.phone }],
+//     //   },
+//     // })
+
+//     // if (existingInquiry) {
+//     //   return {
+//     //     success: false,
+//     //     error: "An inquiry with this email or phone number already exists.",
+//     //   }
+//     // }
+
+//     await db.inquiry.create({
+//       data: {
+//         ...dbData,
+//         message: dbData.message || "",
+//       },
+//     })
+
+//     return { success: true }
+//   } catch (error) {
+//     console.error("Database Error:", error)
+
+//     return {
+//       success: false,
+//       error: "Internal server error.",
+//     }
+//   }
+// }
+
+
+
+
 "use server"
 
 import { db } from "@/lib/db"
@@ -47,25 +120,23 @@ export async function submitContactForm(data: ContactFormValues) {
       },
     })
 
-    // --- LOCAL TESTING SETUP (Ethereal Email) ---
-    const testAccount = await nodemailer.createTestAccount()
-
+    // --- PRODUCTION SETUP (Brevo SMTP) ---
     const transporter = nodemailer.createTransport({
-      host: "smtp.ethereal.email",
-      port: 587,
-      secure: false,
+      host: process.env.MAIL_HOST,
+      port: Number(process.env.MAIL_PORT) || 587,
+      secure: false, // false for 587, true for 465
       auth: {
-        user: testAccount.user,
-        pass: testAccount.pass,
+        user: process.env.MAIL_USERNAME,
+        pass: process.env.MAIL_PASSWORD,
       },
     })
 
     const mailOptions = {
-      from: '"Website Form" <test@example.com>',
+      from: `"${process.env.MAIL_FROM_NAME}" <${process.env.MAIL_FROM_ADDRESS}>`,
       to: "digitalfueled@gmail.com",
-      subject: `[TEST] New ${dbData.service} Enquiry from ${dbData.name}`,
-
-      // Plain text fallback (now includes Service)
+      subject: `New ${dbData.service} Enquiry from ${dbData.name}`,
+      
+      // Plain text fallback
       text: `
         New Enquiry Details:
         
@@ -77,8 +148,8 @@ export async function submitContactForm(data: ContactFormValues) {
         Message:
         ${dbData.message || "No additional message provided."}
       `,
-
-      // Highly Styled HTML version (now includes Service)
+      
+      // Highly Styled HTML version
       html: `
         <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f4f4f5; padding: 40px 20px; border-radius: 8px;">
           <div style="background-color: #ffffff; padding: 30px; border-radius: 8px; border-top: 5px solid #2563eb; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
@@ -116,15 +187,12 @@ export async function submitContactForm(data: ContactFormValues) {
       `,
     }
 
-    const info = await transporter.sendMail(mailOptions)
-
-    console.log("Message sent: %s", info.messageId)
-    console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info))
+    await transporter.sendMail(mailOptions)
     // ---------------------------------------------
 
     return { success: true }
   } catch (error) {
-    console.error("Database Error:", error)
+    console.error("Database or Email Error:", error)
 
     return {
       success: false,
