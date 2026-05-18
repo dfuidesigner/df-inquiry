@@ -13,12 +13,15 @@ datasource db {
 }
 
 model Inquiry {
-  id           String  @id @default(cuid())
+  id           String       @id @default(cuid())
   name         String
   email        String
   phone        String
   service      String
-  message      String? @db.Text
+  message      String?      @db.Text
+  status       String?      @default("NEW")
+  rewardValue  Float?
+  actions      LeadAction[]
   source       String?
   utm_source   String?
   utm_medium   String?
@@ -27,4 +30,19 @@ model Inquiry {
   utm_term     String?
 
   createdAt DateTime @default(now())
+  updatedAt    DateTime     @default(now()) @updatedAt
+}
+
+model LeadAction {
+  id        String  @id @default(cuid())
+  inquiryId String
+  inquiry   Inquiry @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+
+  actionType String
+  outcome    String
+  note       String? @db.Text
+
+  createdAt DateTime @default(now())
+
+  @@map("lead_actions")
 }

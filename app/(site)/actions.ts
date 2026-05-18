@@ -68,9 +68,6 @@
 //   }
 // }
 
-
-
-
 "use server"
 
 import { db } from "@/lib/db"
@@ -90,13 +87,11 @@ export async function submitContactForm(data: ContactFormValues) {
 
     const formData = parsedData.data
 
-    // Honeypot check
     if (formData.website && formData.website.length > 0) {
       console.log("Bot blocked by honeypot")
       return { success: true }
     }
 
-    // Speed check
     if (formData.formStart) {
       const startTime = parseInt(formData.formStart)
       const now = Date.now()
@@ -112,7 +107,6 @@ export async function submitContactForm(data: ContactFormValues) {
 
     const { website, formStart, ...dbData } = formData
 
-    // Save to Database
     await db.inquiry.create({
       data: {
         ...dbData,
@@ -120,11 +114,10 @@ export async function submitContactForm(data: ContactFormValues) {
       },
     })
 
-    // --- PRODUCTION SETUP (Brevo SMTP) ---
     const transporter = nodemailer.createTransport({
       host: process.env.MAIL_HOST,
       port: Number(process.env.MAIL_PORT) || 587,
-      secure: false, // false for 587, true for 465
+      secure: false,
       auth: {
         user: process.env.MAIL_USERNAME,
         pass: process.env.MAIL_PASSWORD,
@@ -135,8 +128,7 @@ export async function submitContactForm(data: ContactFormValues) {
       from: `"${process.env.MAIL_FROM_NAME}" <${process.env.MAIL_FROM_ADDRESS}>`,
       to: "digitalfueled@gmail.com",
       subject: `New ${dbData.service} Enquiry from ${dbData.name}`,
-      
-      // Plain text fallback
+
       text: `
         New Enquiry Details:
         
@@ -148,8 +140,7 @@ export async function submitContactForm(data: ContactFormValues) {
         Message:
         ${dbData.message || "No additional message provided."}
       `,
-      
-      // Highly Styled HTML version
+
       html: `
         <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f4f4f5; padding: 40px 20px; border-radius: 8px;">
           <div style="background-color: #ffffff; padding: 30px; border-radius: 8px; border-top: 5px solid #2563eb; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
@@ -188,7 +179,6 @@ export async function submitContactForm(data: ContactFormValues) {
     }
 
     await transporter.sendMail(mailOptions)
-    // ---------------------------------------------
 
     return { success: true }
   } catch (error) {
