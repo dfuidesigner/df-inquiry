@@ -83,8 +83,8 @@ export default function ConsultationSection({
 
   const defaultTitle = (
     <>
-      Website Designing & Digital Marketing{" "}
-      <span className="text-[#3b82f6]">Agency in Delhi</span>
+      Website Design and <br className="hidden md:block" />
+      Development <span className="text-[#3b82f6]">Agency in Delhi</span>
     </>
   )
 
