@@ -27,14 +27,14 @@ const DigitalMarketingPage = () => {
       <ConsultationSection
         title={
           <>
-            Digital Marketing Company in Delhi NCR –{" "}
+            Custom Mobile App Development Company in Delhi NCR -{" "}
             <span className="text-[#3b82f6]">
-              Performance Marketing & Lead Generation Experts
+              Android, iOS & Cross-Platform Apps
             </span>
           </>
         }
         descriptions={[
-          "We offer complete digital marketing services to help businesses grow online, generate quality leads, and increase brand visibility. Our team specializes in SEO, social media marketing, paid advertising, content marketing, and performance campaigns designed to deliver measurable business results and higher ROI.",
+          "We build high-performance, scalable, and user-friendly mobile applications for startups, businesses, and enterprises. From idea validation and UI/UX design to development, testing, deployment, and post-launch support, our team delivers secure and feature-rich Android, iOS, and cross-platform mobile apps tailored to your business goals.",
         ]}
       />
 
@@ -44,26 +44,26 @@ const DigitalMarketingPage = () => {
         badgeText="Marketing Specialists"
         title={
           <>
-            Targeted Advertising &{" "}
+            Innovative Mobile Apps &{" "}
             <span className="bg-linear-to-tl from-[#0091DA] via-[#143DA7] to-[#080C5E] bg-clip-text text-transparent">
-              High-Converting Solutions
+              Scalable Digital Solutions
             </span>
           </>
         }
         descriptions={[
-          "Driving business growth through data-driven digital marketing strategies, targeted advertising campaigns, and high-converting online marketing solutions for startups, SMEs, and enterprises across industries.",
+          "Delivering innovative mobile app development services with modern technology, seamless user experience, and business-focused solutions across healthcare, education, ecommerce, travel, fintech, and enterprise industries.",
         ]}
         pointers={[
-          "Complete Digital Marketing Solutions",
-          "Social Media Marketing & Management",
-          "Google Ads & PPC Campaign Management",
-          "Facebook & Instagram Advertising",
-          "Lead Generation & Performance Marketing",
-          "SEO & Organic Growth Strategies",
-          "Content Marketing & Creative Campaigns",
-          "Brand Awareness & Online Reputation Management",
-          "Ecommerce & Conversion-Focused Marketing",
-          "Monthly Reporting & Analytics Tracking",
+          "Android & iOS App Development",
+          "Flutter & React Native App Solutions",
+          "Custom UI/UX Design for Mobile Apps",
+          "Startup MVP & Enterprise App Development",
+          "API Integration & Admin Panel Development",
+          "Secure, Fast & Scalable Mobile Applications",
+          "App Store & Play Store Deployment Support",
+          "Real-Time Tracking, Chat & Payment Gateway Integration",
+          "Ongoing Technical Support & Maintenance",
+          "SEO-Friendly App Landing Pages & ASO Support",
         ]}
       />
 
