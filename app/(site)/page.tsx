@@ -13,9 +13,10 @@ const TestimonialCarousel = dynamic(() => import("./components/testimonial"))
 const FAQSection = dynamic(() => import("./components/faq-section"))
 const ContactSection = dynamic(() => import("./components/contact-section"))
 import ChatbotWrapper from "./components/chatbot-wrapper"
-
 export const metadata = {
-  title: "Website Designing & Digital Marketing Agency in Delhi",
+  title: "Website Design & Development Agency in Delhi",
+  description:
+    "Professional website design and development services in Delhi for modern, responsive, and high-performance websites.",
 }
 const HomePage = () => {
   return (
