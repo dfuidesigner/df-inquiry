@@ -89,10 +89,9 @@ export default function ConsultationSection({
   )
 
   const defaultDescriptions = [
-    "Since 2019, Digital Fueled IT Pvt Ltd has been helping businesses build a powerful online presence through creative website designing and performance-driven digital marketing solutions.",
-    "We develop fast, SEO-friendly, and mobile-responsive websites that not only look professional but also generate leads, sales, and long-term business growth. From website development and e-commerce solutions to SEO, Google Ads, and complete digital marketing services — we help brands attract the right audience and convert visitors into loyal customers.",
+    "Since 2019, Digital Fueled IT Pvt Ltd has been helping businesses build a powerful online presence through creative website design and professional web development solutions.",
+    "We develop fast, SEO-friendly, and mobile-responsive websites that not only look professional but also deliver seamless user experiences and support long-term business growth. From custom website development to e-commerce website solutions, we help businesses build strong and reliable digital platforms.",
   ]
-
   const displayTitle = title || defaultTitle
   const displayDescriptions = descriptions || defaultDescriptions
 
