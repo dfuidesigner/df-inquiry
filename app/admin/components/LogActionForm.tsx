@@ -53,10 +53,12 @@ export function LogActionForm({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="NEW">New</SelectItem>
+            <SelectItem value="HOT">Hot Lead 🔥</SelectItem>
             <SelectItem value="CONTACTED">Contacted</SelectItem>
             <SelectItem value="MEETING">Meeting Scheduled</SelectItem>
             <SelectItem value="WON">Won (Deal Closed!)</SelectItem>
             <SelectItem value="LOST">Lost / Unqualified</SelectItem>
+            <SelectItem value="WASTED">Wasted / Invalid</SelectItem>
           </SelectContent>
         </Select>
       </div>

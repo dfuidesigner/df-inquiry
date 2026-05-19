@@ -41,29 +41,32 @@ export function LeadFilters() {
           defaultValue={searchParams.get("status")?.toString() || "ALL"}
           onValueChange={(value) => updateFilter("status", value)}
         >
-          <SelectTrigger className="w-full border-slate-200 bg-white shadow-sm focus:ring-indigo-500">
+          <SelectTrigger className="border-slate-200 bg-white shadow-sm focus:ring-indigo-500 w-full">
             <SelectValue placeholder="Filter by Status" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="ALL">All Statuses</SelectItem>
             <SelectItem value="NEW">New</SelectItem>
+            <SelectItem value="HOT">Hot Lead 🔥</SelectItem>
             <SelectItem value="CONTACTED">Contacted</SelectItem>
             <SelectItem value="MEETING">Meeting Set</SelectItem>
             <SelectItem value="WON">Won</SelectItem>
             <SelectItem value="LOST">Lost</SelectItem>
+            <SelectItem value="WASTED">Wasted / Invalid</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
       <div className="w-full sm:w-44">
         <Select
-          defaultValue={searchParams.get("sort")?.toString() || "desc"}
+          defaultValue={searchParams.get("sort")?.toString() || "ALL"}
           onValueChange={(value) => updateFilter("sort", value)}
         >
-          <SelectTrigger className="w-full border-slate-200 bg-white shadow-sm focus:ring-indigo-500">
+          <SelectTrigger className="border-slate-200 bg-white shadow-sm focus:ring-indigo-500 w-full">
             <SelectValue placeholder="Sort by Date" />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="ALL">Default Sort</SelectItem>
             <SelectItem value="desc">Newest First</SelectItem>
             <SelectItem value="asc">Oldest First</SelectItem>
           </SelectContent>
