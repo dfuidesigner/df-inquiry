@@ -4,6 +4,7 @@ import { SourceTracker } from "@/components/source-tracker"
 import { Toaster } from "sonner"
 import { MotionProvider } from "@/components/provider/MotionProvider"
 import { GoogleAdsTag } from "@/components/seo/DelayedGAd"
+import { MetaPixel } from "@/components/seo/MetaPixel"
 import { EnquiryProvider } from "@/contexts/EnquiryContext"
 import { EnquiryModal } from "@/components/common/EnquiryModal"
 export const metadata = {
@@ -26,6 +27,7 @@ export default async function SiteLayout({
           <SourceTracker />
           <Toaster />
           <GoogleAdsTag />
+          <MetaPixel />
           <EnquiryModal />
         </EnquiryProvider>
       </MotionProvider>
