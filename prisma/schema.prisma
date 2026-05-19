@@ -30,7 +30,9 @@ model Inquiry {
   utm_term     String?
 
   createdAt DateTime @default(now())
-  updatedAt    DateTime     @default(now()) @updatedAt
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@map("inquiry")
 }
 
 model LeadAction {
