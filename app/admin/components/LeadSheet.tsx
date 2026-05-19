@@ -101,7 +101,7 @@ export function LeadSheet({ lead }: { lead: Lead }) {
             Lead Information
           </h3>
           <dl className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
-            <div>
+            <div className="col-span-2">
               <dt className="text-sm font-medium text-slate-500">
                 Email Address
               </dt>
