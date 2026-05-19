@@ -73,6 +73,7 @@
 import { db } from "@/lib/db"
 import { contactSchema, ContactFormValues } from "@/lib/validations"
 import nodemailer from "nodemailer"
+import { revalidatePath } from "next/cache"
 
 export async function submitContactForm(data: ContactFormValues) {
   try {
@@ -113,7 +114,7 @@ export async function submitContactForm(data: ContactFormValues) {
         message: dbData.message || "",
       },
     })
-
+    revalidatePath("/admin")
     const transporter = nodemailer.createTransport({
       host: process.env.MAIL_HOST,
       port: Number(process.env.MAIL_PORT) || 587,
