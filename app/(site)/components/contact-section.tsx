@@ -12,7 +12,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { contactSchema, type ContactFormValues } from "@/lib/validations"
 import { submitContactForm } from "../actions"
 
-export default function ContactSection() {
+interface ContactSectionProps {
+  defeaultService?: string
+}
+
+export default function ContactSection({
+  defeaultService,
+}: ContactSectionProps) {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -26,7 +32,7 @@ export default function ContactSection() {
       name: "",
       email: "",
       phone: "",
-      service: "",
+      service: defeaultService || "",
       message: "",
       website: "",
       formStart: "",
@@ -298,6 +304,9 @@ export default function ContactSection() {
                         Digital Marketing
                       </option>
                       <option value="game-development">Game Development</option>
+                      <option value="Education-ERP-CRM">
+                        Education ERP & CRM
+                      </option>
                       <option value="other">Other</option>
                     </select>
                     {errors.service && (

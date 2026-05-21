@@ -2,7 +2,6 @@
 
 import * as React from "react"
 import Image from "next/image"
-// Import the autoplay plugin
 import Autoplay from "embla-carousel-autoplay"
 import {
   Carousel,
@@ -12,8 +11,7 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel"
 
-// Your specific projects
-const projects = [
+const defaultProjects = [
   {
     id: 1,
     title: "Wild Wisdom",
@@ -56,7 +54,22 @@ const projects = [
   },
 ]
 
-export default function ProjectCarouselSection() {
+interface Project {
+  id: number
+  title: string
+  type: string
+  tags: string[]
+  image: string
+  link?: string
+}
+
+interface ProjectCarouselSectionProps {
+  projects?: Project[]
+}
+
+export default function ProjectCarouselSection({
+  projects = defaultProjects,
+}: ProjectCarouselSectionProps) {
   const [plugin] = React.useState(() =>
     Autoplay({ delay: 2000, stopOnInteraction: true })
   )
@@ -130,7 +143,6 @@ export default function ProjectCarouselSection() {
             ))}
           </CarouselContent>
 
-          {/* Navigation Controls positioned at the bottom right */}
           <div className="mt-8 flex justify-end gap-4">
             <CarouselPrevious className="static translate-y-0 border-gray-200 bg-white text-[#080C5E] hover:bg-gray-50 hover:text-[#0091DA]" />
             <CarouselNext className="static translate-y-0 border-gray-200 bg-white text-[#080C5E] hover:bg-gray-50 hover:text-[#0091DA]" />

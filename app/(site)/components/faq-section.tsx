@@ -10,7 +10,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ArrowUpRight } from "lucide-react"
 
-const faqs = [
+const defaultFaqs = [
   {
     value: "item-1",
     question: "How do I choose a reliable web app development agency?",
@@ -77,7 +77,18 @@ const faqs = [
   },
 ]
 
-export default function FAQSection() {
+interface FAQItem {
+  value: string
+  question: string
+  answer: string | React.ReactNode
+}
+
+interface FAQSectionProps {
+  faqs?: FAQItem[]
+}
+
+export default function FAQSection({ faqs }: FAQSectionProps) {
+  const displayFaqs = faqs || defaultFaqs
   return (
     <section className="px-4 py-16">
       <div className="container mx-auto max-w-7xl">
@@ -105,7 +116,7 @@ export default function FAQSection() {
               defaultValue="item-1"
               className="w-full"
             >
-              {faqs.map((faq) => (
+              {displayFaqs.map((faq) => (
                 <AccordionItem
                   key={faq.value}
                   value={faq.value}

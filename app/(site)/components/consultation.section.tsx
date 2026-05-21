@@ -15,10 +15,12 @@ import React from "react"
 interface ConsultationSectionProps {
   title?: React.ReactNode
   descriptions?: React.ReactNode[]
+  defeaultService?: string
 }
 
 export default function ConsultationSection({
   title,
+  defeaultService,
   descriptions,
 }: ConsultationSectionProps) {
   const router = useRouter()
@@ -34,7 +36,7 @@ export default function ConsultationSection({
       name: "",
       email: "",
       phone: "",
-      service: "",
+      service: defeaultService || "",
       message: "",
       website: "",
       formStart: "",
@@ -298,6 +300,7 @@ export default function ConsultationSection({
                         Digital Marketing
                       </option>
                       <option value="game-development">Game Development</option>
+                      <option value="Education-ERP-CRM">Education ERP & CRM</option>
                       <option value="other">Other</option>
                     </select>
                     {errors.service && (
