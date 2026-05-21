@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { m as motion } from "framer-motion"
-import { ArrowRight, Loader2 } from "lucide-react"
+import { ArrowRight, CheckCircle, Loader2 } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useRouter } from "next/navigation"
@@ -16,12 +16,14 @@ interface ConsultationSectionProps {
   title?: React.ReactNode
   descriptions?: React.ReactNode[]
   defeaultService?: string
+  points?: string[]
 }
 
 export default function ConsultationSection({
   title,
   defeaultService,
   descriptions,
+  points,
 }: ConsultationSectionProps) {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -139,6 +141,17 @@ export default function ConsultationSection({
                   </p>
                 ))}
               </div>
+
+              {points && points.length > 0 && (
+                <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  {points.slice(0, 4).map((point, idx) => (
+                    <div key={idx} className="flex items-start gap-2">
+                      <CheckCircle className="mt-0.5 h-5 w-5 shrink-0 text-[#3b82f6]" />
+                      <span className="text-sm text-gray-200">{point}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="grid w-full max-w-112.5 grid-cols-4 gap-6 font-gra">
@@ -300,7 +313,9 @@ export default function ConsultationSection({
                         Digital Marketing
                       </option>
                       <option value="game-development">Game Development</option>
-                      <option value="Education-ERP-CRM">Education ERP & CRM</option>
+                      <option value="Education-ERP-CRM">
+                        Education ERP & CRM
+                      </option>
                       <option value="other">Other</option>
                     </select>
                     {errors.service && (

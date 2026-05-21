@@ -54,9 +54,10 @@ interface AboutSectionProps {
   descriptions: string[]
   additionalLine?: string
   pointers: string[]
+  showAdmissionClients?: boolean
 }
 
-const clients = [
+const defaultsClients = [
   {
     id: 1,
     src: "/images/client/sehgalneohospital.jpg",
@@ -97,6 +98,51 @@ const clients = [
   { id: 30, src: "/images/client/century-led.png", alt: "century-led" },
   { id: 31, src: "/images/client/bschool.png", alt: "bhartiyaschoolnigeria" },
   { id: 32, src: "/images/client/moddern-collage.png", alt: "Moddern Collage" },
+]
+
+const AdmissionCrmClient = [
+  { id: 31, src: "/images/client/bschool.png", alt: "bhartiyaschoolnigeria" },
+  { id: 32, src: "/images/client/moddern-collage.png", alt: "Moddern Collage" },
+  { id: 25, src: "/images/client/BalajiTyping.jpg", alt: "BalajiTyping" },
+  { id: 26, src: "/images/client/blue-bell.png", alt: "Blue Bells" },
+
+  { id: 3, src: "/images/client/WWF.jpg", alt: "WWF" },
+
+  {
+    id: 1,
+    src: "/images/client/sehgalneohospital.jpg",
+    alt: "Sehgal Hospital",
+  },
+  { id: 2, src: "/images/client/canon.jpg", alt: "Canon" },
+  { id: 4, src: "/images/client/Agarwal-packers.jpg", alt: "Agarwal Packers" },
+  { id: 5, src: "/images/client/caho.jpg", alt: "CAHO" },
+  { id: 6, src: "/images/client/ahpi.jpg", alt: "AHPI" },
+  { id: 7, src: "/images/client/supervity.webp", alt: "Fashion TV" },
+  { id: 8, src: "/images/client/Gaur-City-mall.jpg", alt: "Gaur Mall" },
+  { id: 9, src: "/images/client/havells-logo.png", alt: "Havells" },
+  { id: 10, src: "/images/client/PIndBaluchi.png", alt: "Pind Baluchi" },
+  { id: 11, src: "/images/client/magik-logo.png", alt: "Magik" },
+  { id: 12, src: "/images/client/paraslogo.png", alt: "Paras" },
+  { id: 13, src: "/images/client/century-led.png", alt: "Century" },
+  // { id: 14, src: "/images/client/fabpiks.jpg", alt: "FabPiks" },
+  { id: 15, src: "/images/client/venturaindia.jpg", alt: "Ventura" },
+  { id: 16, src: "/images/client/mygleeo.jpg", alt: "Gleeo Health" },
+  { id: 17, src: "/images/client/adtu.jpg", alt: "ADTU" },
+  { id: 18, src: "/images/client/fhrai.png", alt: "FHRAI" },
+  { id: 19, src: "/images/client/harmonia.png", alt: "Blue Bells" },
+  // { id: 20, src: "/images/client/dost.jpg", alt: "Dost" },
+  {
+    id: 21,
+    src: "/images/client/scientificpathology-logo-hp.png",
+    alt: "Scientific Pathology",
+  },
+  { id: 22, src: "/images/client/finedge-logo.png", alt: "Finedge" },
+  { id: 23, src: "/images/client/indorama.svg", alt: "Indorama" },
+  { id: 24, src: "/images/client/rg.jpg", alt: "Rate Gain" },
+  { id: 27, src: "/images/client/p4psi.jpg", alt: "p4psi" },
+  { id: 28, src: "/images/client/prakash.svg", alt: "Prakash" },
+  { id: 29, src: "/images/client/AGRI-PRO.jpg", alt: "AGRI-PRO" },
+  { id: 30, src: "/images/client/century-led.png", alt: "century-led" },
 ]
 
 const fadeUp = {
@@ -140,8 +186,10 @@ export default function AboutSection({
   descriptions,
   additionalLine,
   pointers,
+  showAdmissionClients,
 }: AboutSectionProps) {
   const { openEnquiry } = useEnquiry()
+  const clients = showAdmissionClients ? AdmissionCrmClient : defaultsClients
 
   return (
     <div className="bg-white text-zinc-900 selection:bg-zinc-200">
