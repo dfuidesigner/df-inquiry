@@ -28,3 +28,4 @@ export const contactSchema = z.object({
 })
 
 export type ContactFormValues = z.infer<typeof contactSchema>
+  

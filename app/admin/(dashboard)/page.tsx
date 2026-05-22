@@ -5,6 +5,7 @@ import { ActivityChart } from "../components/ActivityChart"
 import { LeadSheet } from "../components/LeadSheet"
 import { LeadFilters } from "../components/LeadFilters"
 import { Prisma } from "@/generated/prisma/client"
+import { CreateLeadSheet } from "../components/CreateLeadSheet"
 
 function getStatusBadge(status: string) {
   switch (status) {
@@ -132,7 +133,10 @@ export default async function AdminDashboard(props: {
             </p>
           </div>
 
-          <LeadFilters />
+          <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
+            <CreateLeadSheet />
+            <LeadFilters />
+          </div>
         </div>
 
         <div className="block w-full overflow-x-auto">
@@ -195,7 +199,7 @@ export default async function AdminDashboard(props: {
                           </span>
                           {inq.utm_campaign && (
                             <span
-                              className="max-w-[120px] truncate text-xs text-slate-400"
+                              className="max-w-30 truncate text-xs text-slate-400"
                               title={inq.utm_campaign}
                             >
                               {inq.utm_campaign}
@@ -273,8 +277,8 @@ export default async function AdminDashboard(props: {
                               fill="none"
                             >
                               <path
-                                fill-rule="evenodd"
-                                clip-rule="evenodd"
+                                fillRule="evenodd"
+                                clipRule="evenodd"
                                 d="M16 31C23.732 31 30 24.732 30 17C30 9.26801 23.732 3 16 3C8.26801 3 2 9.26801 2 17C2 19.5109 2.661 21.8674 3.81847 23.905L2 31L9.31486 29.3038C11.3014 30.3854 13.5789 31 16 31ZM16 28.8462C22.5425 28.8462 27.8462 23.5425 27.8462 17C27.8462 10.4576 22.5425 5.15385 16 5.15385C9.45755 5.15385 4.15385 10.4576 4.15385 17C4.15385 19.5261 4.9445 21.8675 6.29184 23.7902L5.23077 27.7692L9.27993 26.7569C11.1894 28.0746 13.5046 28.8462 16 28.8462Z"
                                 fill="#BFC8D0"
                               />
@@ -283,8 +287,8 @@ export default async function AdminDashboard(props: {
                                 fill="url(#paint0_linear_87_7264)"
                               />
                               <path
-                                fill-rule="evenodd"
-                                clip-rule="evenodd"
+                                fillRule="evenodd"
+                                clipRule="evenodd"
                                 d="M16 30C23.732 30 30 23.732 30 16C30 8.26801 23.732 2 16 2C8.26801 2 2 8.26801 2 16C2 18.5109 2.661 20.8674 3.81847 22.905L2 30L9.31486 28.3038C11.3014 29.3854 13.5789 30 16 30ZM16 27.8462C22.5425 27.8462 27.8462 22.5425 27.8462 16C27.8462 9.45755 22.5425 4.15385 16 4.15385C9.45755 4.15385 4.15385 9.45755 4.15385 16C4.15385 18.5261 4.9445 20.8675 6.29184 22.7902L5.23077 26.7692L9.27993 25.7569C11.1894 27.0746 13.5046 27.8462 16 27.8462Z"
                                 fill="white"
                               />

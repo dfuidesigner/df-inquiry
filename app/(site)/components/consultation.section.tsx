@@ -303,7 +303,7 @@ export default function ConsultationSection({
                           : "border-gray-200"
                       }`}
                     >
-                      <option value="">Select Service..</option>
+                      {/* <option value="">Select Service..</option>
                       <option value="website-design">
                         Website Design and Development
                       </option>
@@ -316,7 +316,38 @@ export default function ConsultationSection({
                       <option value="Education-ERP-CRM">
                         Education ERP & CRM
                       </option>
-                      <option value="other">Other</option>
+                      <option value="other">Other</option> */}
+                      {defeaultService === "Education-ERP-CRM" ? (
+                        <>
+                          <option value="Education-ERP-CRM">
+                            Education ERP & CRM
+                          </option>
+                        </>
+                      ) : (
+                        <>
+                          <option value="">Select Service..</option>
+
+                          <option value="website-design">
+                            Website Design and Development
+                          </option>
+
+                          <option value="mobile-app">
+                            Mobile App Development
+                          </option>
+
+                          <option value="saas">Custom SaaS Development</option>
+
+                          <option value="digital-marketing">
+                            Digital Marketing
+                          </option>
+
+                          <option value="game-development">
+                            Game Development
+                          </option>
+
+                          <option value="other">Other</option>
+                        </>
+                      )}
                     </select>
                     {errors.service && (
                       <span className="text-[10px] text-red-500">

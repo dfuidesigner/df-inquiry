@@ -96,8 +96,8 @@ const defaultsClients = [
   { id: 28, src: "/images/client/prakash.svg", alt: "Prakash" },
   { id: 29, src: "/images/client/AGRI-PRO.jpg", alt: "AGRI-PRO" },
   { id: 30, src: "/images/client/century-led.png", alt: "century-led" },
-  { id: 31, src: "/images/client/bschool.png", alt: "bhartiyaschoolnigeria" },
-  { id: 32, src: "/images/client/moddern-collage.png", alt: "Moddern Collage" },
+  // { id: 31, src: "/images/client/bschool.png", alt: "bhartiyaschoolnigeria" },
+  // { id: 32, src: "/images/client/moddern-collage.png", alt: "Moddern Collage" },
 ]
 
 const AdmissionCrmClient = [
