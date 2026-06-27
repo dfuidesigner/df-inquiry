@@ -1,13 +1,54 @@
-import { NextResponse } from "next/server"
-import type { NextRequest } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 
-export function proxy(req: NextRequest) {
-  const { pathname } = req.nextUrl
-  const session = req.cookies.get("admin_session")?.value
+import { verifyAdminJWT } from "@/lib/admin/jwt"
+import { ADMIN_COOKIE } from "@/lib/admin/auth"
 
-  if (pathname.startsWith("/admin") && pathname !== "/admin/login") {
-    if (!session) {
-      return NextResponse.redirect(new URL("/admin/login", req.url))
+export async function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl
+
+  const token = request.cookies.get(ADMIN_COOKIE)?.value
+
+  // ===========================
+  // Admin Login Route
+  // ===========================
+  if (pathname === "/admin/login") {
+    if (!token) {
+      return NextResponse.next()
+    }
+
+    try {
+      await verifyAdminJWT(token)
+
+      return NextResponse.redirect(new URL("/admin/dashboard", request.url))
+    } catch {
+      const response = NextResponse.next()
+
+      response.cookies.delete(ADMIN_COOKIE)
+
+      return response
+    }
+  }
+
+  // ===========================
+  // Protected Admin Routes
+  // ===========================
+  if (pathname.startsWith("/admin")) {
+    if (!token) {
+      return NextResponse.redirect(new URL("/admin/login", request.url))
+    }
+
+    try {
+      await verifyAdminJWT(token)
+
+      return NextResponse.next()
+    } catch {
+      const response = NextResponse.redirect(
+        new URL("/admin/login", request.url)
+      )
+
+      response.cookies.delete(ADMIN_COOKIE)
+
+      return response
     }
   }
 
@@ -15,5 +56,5 @@ export function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
 }

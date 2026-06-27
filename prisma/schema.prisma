@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../generated/prisma"
@@ -12,16 +7,75 @@ datasource db {
   provider = "mysql"
 }
 
+enum AdminRole {
+  SUPER_ADMIN
+  MANAGER
+  SALES
+}
+
+enum PermissionKey {
+  VIEW_ALL_LEADS
+  VIEW_ASSIGNED_LEADS
+
+  CREATE_LEAD
+  EDIT_LEAD
+  DELETE_LEAD
+
+  ASSIGN_LEAD
+
+  CREATE_ADMIN
+  EDIT_ADMIN
+  DELETE_ADMIN
+
+  VIEW_REPORTS
+  EXPORT_LEADS
+}
+
+model Admin {
+  id       String @id @default(cuid())
+  name     String
+  email    String @unique
+  password String
+
+  role     AdminRole @default(SALES)
+  isActive Boolean   @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  permissions   Permission[]
+  assignedLeads Inquiry[]
+
+  @@map("admins")
+}
+
+model Permission {
+  id String @id @default(cuid())
+
+  adminId String
+  admin   Admin  @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  permission PermissionKey
+
+  createdAt DateTime @default(now())
+
+  @@unique([adminId, permission])
+  @@map("permissions")
+}
+
 model Inquiry {
-  id           String       @id @default(cuid())
-  name         String
-  email        String
-  phone        String
-  service      String
-  message      String?      @db.Text
-  status       String?      @default("NEW")
-  rewardValue  Float?
-  actions      LeadAction[]
+  id String @id @default(cuid())
+
+  name  String
+  email String
+  phone String
+
+  service String
+  message String? @db.Text
+
+  status      String? @default("NEW")
+  rewardValue Float?
+
   source       String?
   utm_source   String?
   utm_medium   String?
@@ -29,14 +83,23 @@ model Inquiry {
   utm_content  String?
   utm_term     String?
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
+  assignedToId String?
+  assignedTo   Admin?  @relation(fields: [assignedToId], references: [id], onDelete: SetNull)
 
+  actions LeadAction[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([assignedToId])
+  @@index([status])
+  @@index([createdAt])
   @@map("inquiry")
 }
 
 model LeadAction {
-  id        String  @id @default(cuid())
+  id String @id @default(cuid())
+
   inquiryId String
   inquiry   Inquiry @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
 
@@ -46,5 +109,7 @@ model LeadAction {
 
   createdAt DateTime @default(now())
 
+  @@index([inquiryId])
+  @@index([createdAt])
   @@map("lead_actions")
 }
