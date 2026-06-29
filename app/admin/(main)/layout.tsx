@@ -1,4 +1,7 @@
-import { requireAdmin } from "@/lib/admin/auth"
+import {
+  requireAdminWithPermissions,
+  permissionList,
+} from "@/lib/admin/permissions"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { AdminShell } from "@/components/admin/admin-shell"
 import { SidebarConfigProvider } from "@/contexts/sidebar-context"
@@ -9,13 +12,14 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode
 }) {
-  const admin = await requireAdmin()
+  const admin = await requireAdminWithPermissions()
 
   const currentAdmin = {
     id: admin.id,
     name: admin.name,
     email: admin.email,
     role: admin.role,
+    permissions: permissionList(admin),
   }
 
   return (
