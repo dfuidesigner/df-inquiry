@@ -18,27 +18,51 @@ const STATUS_ORDER = [
   "LOST",
 ]
 
-function startOfDay(date: Date) {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate())
+function currentMonthValue() {
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`
 }
 
-function weekKey(date: Date) {
-  const firstDay = startOfDay(date)
-  const day = firstDay.getDay()
-  const diff = firstDay.getDate() - day
-  const weekStart = new Date(firstDay.setDate(diff))
+function parseMonth(month?: string) {
+  const fallback = currentMonthValue()
+  const value = month && /^\d{4}-\d{2}$/.test(month) ? month : fallback
+  const [yearText, monthText] = value.split("-")
+  const year = Number(yearText)
+  const monthIndex = Number(monthText) - 1
 
-  return weekStart.toLocaleDateString("en", {
-    month: "short",
-    day: "numeric",
+  if (!Number.isInteger(year) || !Number.isInteger(monthIndex) || monthIndex < 0 || monthIndex > 11) {
+    return parseMonth(fallback)
+  }
+
+  const start = new Date(year, monthIndex, 1)
+  const end = new Date(year, monthIndex + 1, 1)
+  const label = start.toLocaleDateString("en", {
+    month: "long",
+    year: "numeric",
   })
+
+  return { value, start, end, label }
+}
+
+function daysInMonth(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()
+}
+
+function dayKey(date: Date) {
+  return String(date.getDate())
 }
 
 function incrementMap(map: Map<string, number>, key: string, amount = 1) {
   map.set(key, (map.get(key) ?? 0) + amount)
 }
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ month?: string }>
+}) {
+  const resolvedSearchParams = await searchParams
+  const selectedMonth = parseMonth(resolvedSearchParams?.month)
   const admin = await requireAdminWithPermissions()
   const canManageAdmins =
     hasPermission(admin, "CREATE_ADMIN") ||
@@ -46,7 +70,13 @@ export default async function DashboardPage() {
     hasPermission(admin, "DELETE_ADMIN")
 
   const leads = await prisma.inquiry.findMany({
-    where: leadAccessWhere(admin),
+    where: {
+      ...leadAccessWhere(admin),
+      createdAt: {
+        gte: selectedMonth.start,
+        lt: selectedMonth.end,
+      },
+    },
     orderBy: { createdAt: "desc" },
     select: {
       id: true,
@@ -68,30 +98,21 @@ export default async function DashboardPage() {
 
   const statusCounts = new Map<string, number>()
   const serviceCounts = new Map<string, number>()
-  const weeklyCounts = new Map<string, number>()
+  const dailyCounts = new Map<string, number>()
   const adminCounts = new Map<string, number>()
 
   for (const status of STATUS_ORDER) {
     statusCounts.set(status, 0)
   }
 
-  const lastEightWeeks = Array.from({ length: 8 }, (_, index) => {
-    const date = new Date()
-    date.setDate(date.getDate() - (7 - index) * 7)
-    return weekKey(date)
-  })
-
-  for (const label of lastEightWeeks) {
-    weeklyCounts.set(label, 0)
+  for (let day = 1; day <= daysInMonth(selectedMonth.start); day += 1) {
+    dailyCounts.set(String(day), 0)
   }
 
   for (const lead of leads) {
     incrementMap(statusCounts, lead.status ?? "NEW")
     incrementMap(serviceCounts, lead.service || "Unknown")
-    const leadWeek = weekKey(lead.createdAt)
-    if (weeklyCounts.has(leadWeek)) {
-      incrementMap(weeklyCounts, leadWeek)
-    }
+    incrementMap(dailyCounts, dayKey(lead.createdAt))
     incrementMap(adminCounts, lead.assignedTo?.name ?? "Unassigned")
   }
 
@@ -106,6 +127,8 @@ export default async function DashboardPage() {
 
   const data: DashboardData = {
     role: admin.role,
+    selectedMonth: selectedMonth.value,
+    selectedMonthLabel: selectedMonth.label,
     stats: {
       totalLeads: leads.length,
       openLeads,
@@ -119,7 +142,7 @@ export default async function DashboardPage() {
     statusDistribution: Array.from(statusCounts.entries()).map(
       ([label, value]) => ({ label, value })
     ),
-    weeklyTrend: Array.from(weeklyCounts.entries()).map(([label, value]) => ({
+    monthlyTrend: Array.from(dailyCounts.entries()).map(([label, value]) => ({
       label,
       value,
     })),
@@ -143,3 +166,4 @@ export default async function DashboardPage() {
 
   return <DashboardClient data={data} />
 }
+

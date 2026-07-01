@@ -1,8 +1,10 @@
 "use client"
 
+import { useRouter } from "next/navigation"
 import {
   ArrowUpRight,
   BadgeDollarSign,
+  CalendarDays,
   CheckCircle2,
   ClipboardList,
   LineChart,
@@ -12,6 +14,7 @@ import {
   type LucideIcon,
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
@@ -19,6 +22,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 
 export type ChartPoint = {
   label: string
@@ -27,6 +32,8 @@ export type ChartPoint = {
 
 export type DashboardData = {
   role: string
+  selectedMonth: string
+  selectedMonthLabel: string
   stats: {
     totalLeads: number
     openLeads: number
@@ -37,7 +44,7 @@ export type DashboardData = {
     activeAdmins: number | null
   }
   statusDistribution: ChartPoint[]
-  weeklyTrend: ChartPoint[]
+  monthlyTrend: ChartPoint[]
   topServices: ChartPoint[]
   adminPerformance: ChartPoint[]
   latestLeads: Array<{
@@ -121,7 +128,11 @@ function BarList({
           </div>
           <div className="h-2 overflow-hidden rounded-full bg-muted">
             <div
-              className={`h-full rounded-full ${colors ? (statusTones[point.label] ?? "bg-primary") : "bg-primary"}`}
+              className={`h-full rounded-full ${
+                colors
+                  ? (statusTones[point.label] ?? "bg-primary")
+                  : "bg-primary"
+              }`}
               style={{ width: `${Math.max(4, (point.value / max) * 100)}%` }}
             />
           </div>
@@ -131,47 +142,90 @@ function BarList({
   )
 }
 
-function TrendBars({ points }: { points: ChartPoint[] }) {
+function MonthTrendBars({ points }: { points: ChartPoint[] }) {
   const max = maxValue(points)
 
   return (
-    <div className="flex h-56 items-end gap-3 rounded-lg border bg-muted/20 p-4">
-      {points.map((point) => (
-        <div
-          key={point.label}
-          className="flex h-full flex-1 flex-col justify-end gap-2"
-        >
+    <div className="flex h-56 items-end gap-1 rounded-lg border bg-muted/20 p-4">
+      {points.map((point) => {
+        const day = Number(point.label)
+        const showLabel = day === 1 || day % 5 === 0 || day === points.length
+
+        return (
           <div
-            className="min-h-2 rounded-t-md bg-primary transition-all"
-            style={{ height: `${Math.max(6, (point.value / max) * 100)}%` }}
-          />
-          <div className="text-center text-[11px] text-muted-foreground">
-            {point.label}
+            key={point.label}
+            className="flex h-full min-w-2 flex-1 flex-col justify-end gap-2"
+          >
+            <div
+              className="min-h-1 rounded-t-sm bg-primary transition-all"
+              style={{ height: `${Math.max(4, (point.value / max) * 100)}%` }}
+              title={`${point.value} leads on day ${point.label}`}
+            />
+            <div className="h-4 text-center text-[10px] text-muted-foreground">
+              {showLabel ? point.label : ""}
+            </div>
           </div>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }
 
 export function DashboardClient({ data }: DashboardClientProps) {
+  const router = useRouter()
+
+  function handleMonthChange(month: string) {
+    if (!month) return
+    router.push(`/admin/dashboard?month=${month}`)
+  }
+
+  function resetToCurrentMonth() {
+    router.push("/admin/dashboard")
+  }
+
   return (
     <div className="flex flex-col space-y-6 pb-8">
-      <div className="flex flex-col items-start justify-between gap-4 border-b px-4 pt-4 pb-6 sm:flex-row sm:items-center lg:px-8">
+      <div className="flex flex-col items-start justify-between gap-4 border-b px-4 pt-4 pb-6 lg:px-8 xl:flex-row xl:items-center">
         <div>
-          <div className="mb-2 flex items-center gap-2">
+          <div className="mb-2 flex flex-wrap items-center gap-2">
             <Badge variant="outline">{data.role.replace("_", " ")}</Badge>
             <Badge className="gap-1" variant="secondary">
               <ArrowUpRight className="h-3 w-3" />
               {data.stats.conversionRate}% conversion
+            </Badge>
+            <Badge className="gap-1" variant="secondary">
+              <CalendarDays className="h-3 w-3" />
+              {data.selectedMonthLabel}
             </Badge>
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
             LMS Dashboard
           </h1>
           <p className="text-sm text-muted-foreground">
-            Lead pipeline, conversion, team load, and service demand.
+            Lead pipeline, conversion, team load, and service demand for the
+            selected month.
           </p>
+        </div>
+
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-end">
+          <div className="space-y-1.5">
+            <Label
+              htmlFor="dashboard-month"
+              className="text-xs text-muted-foreground"
+            >
+              Month
+            </Label>
+            <Input
+              id="dashboard-month"
+              type="month"
+              value={data.selectedMonth}
+              onChange={(event) => handleMonthChange(event.target.value)}
+              className="w-full sm:w-44"
+            />
+          </div>
+          <Button type="button" variant="outline" onClick={resetToCurrentMonth}>
+            Current Month
+          </Button>
         </div>
       </div>
 
@@ -211,14 +265,14 @@ export function DashboardClient({ data }: DashboardClientProps) {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <LineChart className="h-5 w-5" />
-              Lead Trend
+              Monthly Lead Trend
             </CardTitle>
             <CardDescription>
-              Weekly lead creation across the visible pipeline.
+              Daily lead creation for {data.selectedMonthLabel}.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <TrendBars points={data.weeklyTrend} />
+            <MonthTrendBars points={data.monthlyTrend} />
           </CardContent>
         </Card>
 
@@ -229,7 +283,7 @@ export function DashboardClient({ data }: DashboardClientProps) {
               Status Mix
             </CardTitle>
             <CardDescription>
-              Where leads currently sit in the pipeline.
+              Lead statuses for {data.selectedMonthLabel}.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -243,7 +297,7 @@ export function DashboardClient({ data }: DashboardClientProps) {
           <CardHeader>
             <CardTitle>Top Services</CardTitle>
             <CardDescription>
-              Most requested services from visible leads.
+              Most requested services this month.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -257,7 +311,9 @@ export function DashboardClient({ data }: DashboardClientProps) {
               <Users className="h-5 w-5" />
               Assigned Load
             </CardTitle>
-            <CardDescription>Lead count by assigned admin.</CardDescription>
+            <CardDescription>
+              Lead count by assigned admin this month.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <BarList points={data.adminPerformance} />
@@ -267,14 +323,12 @@ export function DashboardClient({ data }: DashboardClientProps) {
         <Card>
           <CardHeader>
             <CardTitle>Latest Leads</CardTitle>
-            <CardDescription>
-              Newest visible leads in the pipeline.
-            </CardDescription>
+            <CardDescription>Newest visible leads this month.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {data.latestLeads.length === 0 ? (
               <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-                No leads yet.
+                No leads for this month.
               </div>
             ) : (
               data.latestLeads.map((lead) => (
