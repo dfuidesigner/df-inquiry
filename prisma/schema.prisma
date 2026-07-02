@@ -45,6 +45,7 @@ model Admin {
 
   permissions   Permission[]
   assignedLeads Inquiry[]
+  adminTasks    AdminTask[]
 
   @@map("admins")
 }
@@ -88,8 +89,9 @@ model Inquiry {
 
   actions LeadAction[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  adminTasks AdminTask[]
 
   @@index([assignedToId])
   @@index([status])
@@ -112,4 +114,53 @@ model LeadAction {
   @@index([inquiryId])
   @@index([createdAt])
   @@map("lead_actions")
+}
+
+enum AdminTaskType {
+  CALL
+  CLIENT_MEETING
+  FOLLOW_UP
+  DEMO
+  PROPOSAL
+  DOCUMENTATION
+  INTERNAL_WORK
+  OTHER
+}
+
+enum AdminTaskStatus {
+  DONE
+  IN_PROGRESS
+  BLOCKED
+}
+
+model AdminTask {
+  id String @id @default(cuid())
+
+  adminId String
+  admin   Admin  @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  leadId String?
+  lead   Inquiry? @relation(fields: [leadId], references: [id], onDelete: SetNull)
+
+  taskType AdminTaskType
+  status   AdminTaskStatus @default(DONE)
+
+  title       String
+  clientName  String?
+  clientPhone String?
+  clientEmail String?
+  description String? @db.Text
+  outcome     String? @db.Text
+
+  durationMinutes Int
+  taskDate        DateTime @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([adminId])
+  @@index([leadId])
+  @@index([taskDate])
+  @@index([taskType])
+  @@map("admin_tasks")
 }

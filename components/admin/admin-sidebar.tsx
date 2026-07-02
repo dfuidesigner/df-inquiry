@@ -5,6 +5,7 @@ import Link from "next/link"
 import {
   ClipboardList,
   LayoutDashboard,
+  ListTodo,
   LucideIcon,
   Settings,
   ShieldCheck,
@@ -51,6 +52,11 @@ const adminNavigation: Array<{ label: string; items: NavigationItem[] }> = [
         url: "/admin/admins",
         icon: ShieldCheck,
         permissions: ["CREATE_ADMIN", "EDIT_ADMIN", "DELETE_ADMIN"],
+      },
+      {
+        title: "Tasks",
+        url: "/admin/tasks",
+        icon: ListTodo,
       },
       {
         title: "Settings",
