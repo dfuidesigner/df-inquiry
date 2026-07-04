@@ -3,7 +3,31 @@ import { revalidatePath } from "next/cache"
 import { prisma } from "@/lib/prisma"
 import { contactSchema } from "@/lib/validations"
 
+const allowedOrigins = ["https://df-gold.vercel.app", "http://localhost:3000"]
+
+function getCorsHeaders(origin: string | null) {
+  const headers = new Headers({
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  })
+
+  if (origin && allowedOrigins.includes(origin)) {
+    headers.set("Access-Control-Allow-Origin", origin)
+  }
+
+  return headers
+}
+
+export async function OPTIONS(req: NextRequest) {
+  return new NextResponse(null, {
+    status: 204,
+    headers: getCorsHeaders(req.headers.get("origin")),
+  })
+}
+
 export async function POST(req: NextRequest) {
+  const origin = req.headers.get("origin")
+
   try {
     const body = await req.json()
 
@@ -16,7 +40,10 @@ export async function POST(req: NextRequest) {
           error: "Invalid data. Please check your fields.",
           issues: parsedData.error.flatten(),
         },
-        { status: 400 }
+        {
+          status: 400,
+          headers: getCorsHeaders(origin),
+        }
       )
     }
 
@@ -25,7 +52,13 @@ export async function POST(req: NextRequest) {
     // Honeypot
     if (formData.website && formData.website.length > 0) {
       console.log("Bot blocked by honeypot")
-      return NextResponse.json({ success: true })
+
+      return NextResponse.json(
+        { success: true },
+        {
+          headers: getCorsHeaders(origin),
+        }
+      )
     }
 
     // Speed check
@@ -41,7 +74,10 @@ export async function POST(req: NextRequest) {
             success: false,
             error: "Slow down! You're moving too fast.",
           },
-          { status: 429 }
+          {
+            status: 429,
+            headers: getCorsHeaders(origin),
+          }
         )
       }
     }
@@ -111,10 +147,15 @@ export async function POST(req: NextRequest) {
       console.error("WhatsApp API Error:", err)
     }
 
-    return NextResponse.json({
-      success: true,
-      message: "Inquiry submitted successfully.",
-    })
+    return NextResponse.json(
+      {
+        success: true,
+        message: "Inquiry submitted successfully.",
+      },
+      {
+        headers: getCorsHeaders(origin),
+      }
+    )
   } catch (error) {
     console.error("API Error:", error)
 
@@ -123,7 +164,10 @@ export async function POST(req: NextRequest) {
         success: false,
         error: "Internal server error.",
       },
-      { status: 500 }
+      {
+        status: 500,
+        headers: getCorsHeaders(origin),
+      }
     )
   }
 }
