@@ -3,6 +3,8 @@
 import * as React from "react"
 import Link from "next/link"
 import {
+  BriefcaseBusiness,
+  // ClipboardCheck,
   ClipboardList,
   LayoutDashboard,
   ListTodo,
@@ -46,6 +48,12 @@ const adminNavigation: Array<{ label: string; items: NavigationItem[] }> = [
         url: "/admin/leads",
         icon: ClipboardList,
         permissions: ["VIEW_ALL_LEADS", "VIEW_ASSIGNED_LEADS"],
+      },
+      {
+        title: "Careers",
+        url: "/admin/careers",
+        icon: BriefcaseBusiness,
+        permissions: ["VIEW_REPORTS"],
       },
       {
         title: "Admins",

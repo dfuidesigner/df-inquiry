@@ -18,7 +18,8 @@ export const contactSchema = z.object({
 
   website: z.string().max(0, { message: "Bot detected" }).optional(),
   formStart: z.string().optional(),
-
+company: z.string().optional(),
+  location: z.string().optional(),
   source: z.string().optional(),
   utm_source: z.string().optional(),
   utm_medium: z.string().optional(),
