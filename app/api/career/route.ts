@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { mkdir, writeFile } from "fs/promises"
 import path from "path"
 import { prisma } from "@/lib/prisma"
@@ -7,11 +7,37 @@ import { CareerSubmissionSchema } from "@/lib/validations/career"
 export const runtime = "nodejs"
 
 const MAX_RESUME_SIZE = 5 * 1024 * 1024
+
 const ALLOWED_RESUME_TYPES = new Set([
   "application/pdf",
   "application/msword",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 ])
+
+const allowedOrigins = [
+  "https://www.digitalfueled.com",
+  "http://localhost:3000",
+]
+
+function getCorsHeaders(origin: string | null) {
+  const headers = new Headers({
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  })
+
+  if (origin && allowedOrigins.includes(origin)) {
+    headers.set("Access-Control-Allow-Origin", origin)
+  }
+
+  return headers
+}
+
+export async function OPTIONS(req: NextRequest) {
+  return new NextResponse(null, {
+    status: 204,
+    headers: getCorsHeaders(req.headers.get("origin")),
+  })
+}
 
 function safeFileName(fileName: string) {
   const extension = path.extname(fileName).toLowerCase()
@@ -24,7 +50,9 @@ function safeFileName(fileName: string) {
   return `${baseName || "resume"}-${Date.now()}${extension}`
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  const origin = request.headers.get("origin")
+
   try {
     const formData = await request.formData()
     const resume = formData.get("resume")
@@ -48,7 +76,10 @@ export async function POST(request: Request) {
           message: "Invalid career submission.",
           errors: validated.error.flatten().fieldErrors,
         },
-        { status: 400 }
+        {
+          status: 400,
+          headers: getCorsHeaders(origin),
+        }
       )
     }
 
@@ -58,7 +89,10 @@ export async function POST(request: Request) {
           success: false,
           message: "Resume file is required.",
         },
-        { status: 400 }
+        {
+          status: 400,
+          headers: getCorsHeaders(origin),
+        }
       )
     }
 
@@ -68,7 +102,10 @@ export async function POST(request: Request) {
           success: false,
           message: "Resume must be a PDF, DOC, or DOCX file.",
         },
-        { status: 400 }
+        {
+          status: 400,
+          headers: getCorsHeaders(origin),
+        }
       )
     }
 
@@ -78,7 +115,10 @@ export async function POST(request: Request) {
           success: false,
           message: "Resume must be 5MB or smaller.",
         },
-        { status: 400 }
+        {
+          status: 400,
+          headers: getCorsHeaders(origin),
+        }
       )
     }
 
@@ -87,6 +127,7 @@ export async function POST(request: Request) {
 
     const storedFileName = safeFileName(resume.name)
     const filePath = path.join(uploadDir, storedFileName)
+
     const bytes = Buffer.from(await resume.arrayBuffer())
     await writeFile(filePath, bytes)
 
@@ -115,13 +156,23 @@ export async function POST(request: Request) {
         message: "Career submission received.",
         id: submission.id,
       },
-      { status: 201 }
+      {
+        status: 201,
+        headers: getCorsHeaders(origin),
+      }
     )
   } catch (error) {
     console.error(error)
+
     return NextResponse.json(
-      { success: false, message: "Failed to submit career application." },
-      { status: 500 }
+      {
+        success: false,
+        message: "Failed to submit career application.",
+      },
+      {
+        status: 500,
+        headers: getCorsHeaders(origin),
+      }
     )
   }
 }

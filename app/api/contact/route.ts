@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache"
 import { prisma } from "@/lib/prisma"
 import { contactSchema } from "@/lib/validations"
 
-const allowedOrigins = ["https://df-gold.vercel.app", "http://localhost:3000"]
+const allowedOrigins = ["https://www.digitalfueled.com/", "http://localhost:3000"]
 
 function getCorsHeaders(origin: string | null) {
   const headers = new Headers({
