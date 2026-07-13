@@ -3,6 +3,7 @@ import { mkdir, writeFile } from "fs/promises"
 import path from "path"
 import { prisma } from "@/lib/prisma"
 import { CareerSubmissionSchema } from "@/lib/validations/career"
+import { getUploadDir } from "@/lib/local-storage"
 
 export const runtime = "nodejs"
 
@@ -16,6 +17,7 @@ const ALLOWED_RESUME_TYPES = new Set([
 
 const allowedOrigins = [
   "https://www.digitalfueled.com",
+  "https://app.digitalfueled.com",
   "http://localhost:3000",
 ]
 
@@ -41,6 +43,7 @@ export async function OPTIONS(req: NextRequest) {
 
 function safeFileName(fileName: string) {
   const extension = path.extname(fileName).toLowerCase()
+
   const baseName = path
     .basename(fileName, extension)
     .replace(/[^a-zA-Z0-9-_]/g, "-")
@@ -122,7 +125,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const uploadDir = path.join(process.cwd(), "public", "uploads", "careers")
+    const uploadDir = path.join(getUploadDir(), "careers")
     await mkdir(uploadDir, { recursive: true })
 
     const storedFileName = safeFileName(resume.name)
@@ -131,7 +134,7 @@ export async function POST(request: NextRequest) {
     const bytes = Buffer.from(await resume.arrayBuffer())
     await writeFile(filePath, bytes)
 
-    const resumeUrl = `/uploads/careers/${storedFileName}`
+    const resumeUrl = `/api/career/files/${storedFileName}`
 
     const submission = await prisma.careerSubmission.create({
       data: {
@@ -147,7 +150,9 @@ export async function POST(request: NextRequest) {
         resumeUrl,
         resumeFileName: resume.name,
       },
-      select: { id: true },
+      select: {
+        id: true,
+      },
     })
 
     return NextResponse.json(
