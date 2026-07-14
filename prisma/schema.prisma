@@ -20,7 +20,7 @@ enum PermissionKey {
   CREATE_LEAD
   EDIT_LEAD
   DELETE_LEAD
-
+  MANAGE_LEAD_CATEGORIES
   ASSIGN_LEAD
 
   CREATE_ADMIN
@@ -64,6 +64,19 @@ model Permission {
   @@map("permissions")
 }
 
+model LeadCategory {
+  id    String  @id @default(cuid())
+  name  String  @unique
+  color String? @default("#64748b")
+
+  leads Inquiry[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("lead_categories")
+}
+
 model Inquiry {
   id String @id @default(cuid())
 
@@ -89,6 +102,9 @@ model Inquiry {
 
   assignedToId String?
   assignedTo   Admin?  @relation(fields: [assignedToId], references: [id], onDelete: SetNull)
+  categoryId String?
+  category   LeadCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
 
   actions LeadAction[]
 
@@ -98,6 +114,7 @@ model Inquiry {
 
   @@index([assignedToId])
   @@index([status])
+  @@index([categoryId]) 
   @@index([createdAt])
   @@map("inquiry")
 }
@@ -185,7 +202,7 @@ model CareerSubmission {
   phone String
 
   linkedin        String?
-  role        String
+  role            String
   experienceYears Float?
   currentCompany  String?
   location        String?

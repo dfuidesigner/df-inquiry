@@ -8,6 +8,7 @@ import {
   MoreHorizontal,
   PhoneCall,
   Trash2,
+  UserRoundCheck,
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -32,7 +33,11 @@ import {
 } from "@/components/data-table/data-table"
 import { formatDate } from "@/lib/format"
 import { LEAD_STATUSES, type LeadStatus } from "@/lib/validations/admin-lead"
-import type { AdminOption, LeadRowData } from "./leads-client"
+import type {
+  AdminOption,
+  LeadCategoryOption,
+  LeadRowData,
+} from "./leads-client"
 
 type LeadsTableProps = {
   leads: LeadRowData[]
@@ -52,6 +57,9 @@ type LeadsTableProps = {
   onTimeline: (lead: LeadRowData) => void
   onAssign: (lead: LeadRowData, assignedToId: string) => void
   onQuickStatus: (lead: LeadRowData, status: LeadStatus) => void
+  onReassign: (lead: LeadRowData) => void
+  categories: LeadCategoryOption[]
+  onCategoryChange: (lead: LeadRowData, categoryId: string) => void
 }
 
 const statusClassName: Record<string, string> = {
@@ -75,6 +83,9 @@ export function LeadsTable({
   onTimeline,
   onAssign,
   onQuickStatus,
+  onReassign,
+  categories,
+  onCategoryChange,
 }: LeadsTableProps) {
   const filters: FilterConfig[] = [
     {
@@ -94,6 +105,13 @@ export function LeadsTable({
         label: name,
         value: name,
       })),
+    },
+    {
+      columnId: "categoryName",
+      label: "Category",
+      options: Array.from(
+        new Set(leads.map((l) => l.categoryName).filter(Boolean))
+      ).map((name) => ({ label: name, value: name })),
     },
   ]
 
@@ -154,6 +172,41 @@ export function LeadsTable({
           >
             {row.original.status.replace("_", " ")}
           </Badge>
+        ),
+    },
+    {
+      accessorKey: "categoryName",
+      header: "Category",
+      cell: ({ row }) =>
+        permissions.canEdit ? (
+          <Select
+            disabled={disabled}
+            value={row.original.categoryId || "none"}
+            onValueChange={(value) =>
+              onCategoryChange(row.original, value === "none" ? "" : value)
+            }
+          >
+            <SelectTrigger className="h-8 w-36">
+              <SelectValue placeholder="Uncategorized" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">Uncategorized</SelectItem>
+              {categories.map((category) => (
+                <SelectItem key={category.id} value={category.id}>
+                  {category.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : row.original.categoryName ? (
+          <Badge
+            variant="outline"
+            style={{ borderColor: row.original.categoryColor ?? undefined }}
+          >
+            {row.original.categoryName}
+          </Badge>
+        ) : (
+          <span className="text-muted-foreground">-</span>
         ),
     },
     {
@@ -233,6 +286,13 @@ export function LeadsTable({
                   <PhoneCall className="mr-2 h-4 w-4" />
                   Update status
                 </DropdownMenuItem>
+                {permissions.canAssign && (
+                  <DropdownMenuItem onClick={() => onReassign(row.original)}>
+                    <UserRoundCheck className="mr-2 h-4 w-4" />
+                    Reassign for recheck
+                  </DropdownMenuItem>
+                )}
+
                 <DropdownMenuItem onClick={() => onAction(row.original)}>
                   <FileText className="mr-2 h-4 w-4" />
                   Add note

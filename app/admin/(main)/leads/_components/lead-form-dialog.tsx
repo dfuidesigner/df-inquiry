@@ -31,7 +31,11 @@ import {
   type CreateLeadInput,
 } from "@/lib/validations/admin-lead"
 import { createLeadAction, updateLeadAction } from "@/actions/admin/leads"
-import type { AdminOption, LeadRowData } from "./leads-client"
+import type {
+  AdminOption,
+  LeadCategoryOption,
+  LeadRowData,
+} from "./leads-client"
 import type { z } from "zod"
 
 type CreateLeadOutput = z.output<typeof CreateLeadSchema>
@@ -42,6 +46,7 @@ type LeadFormDialogProps = {
   admins: AdminOption[]
   mode: "create" | "edit"
   lead?: LeadRowData | null
+  categories: LeadCategoryOption[]
 }
 
 export function LeadFormDialog({
@@ -49,6 +54,7 @@ export function LeadFormDialog({
   onOpenChange,
   admins,
   mode,
+  categories,
   lead,
 }: LeadFormDialogProps) {
   const router = useRouter()
@@ -84,6 +90,7 @@ export function LeadFormDialog({
       rewardValue: lead?.rewardValue?.toString() ?? "",
       source: lead?.source ?? "",
       assignedToId: lead?.assignedToId ?? "",
+      categoryId: lead?.categoryId ?? ""
     })
     setServerError("")
   }, [lead, open, reset])
@@ -169,6 +176,29 @@ export function LeadFormDialog({
                   {errors.service.message}
                 </p>
               )}
+            </div>
+            <div className="space-y-2">
+              <Label>Category</Label>
+              <Select
+                value={watch("categoryId") || "none"}
+                onValueChange={(value) =>
+                  setValue("categoryId", value === "none" ? "" : value, {
+                    shouldDirty: true,
+                  })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Uncategorized</SelectItem>
+                  {categories.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">

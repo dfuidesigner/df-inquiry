@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { ClipboardList, Plus } from "lucide-react"
+import { ClipboardList, Plus, Import as ImportIcon, Tag } from "lucide-react"
 import type { AdminRole, PermissionKey } from "@/generated/prisma/client"
 import type { AdminUser } from "@/types/admin"
 import { Button } from "@/components/ui/button"
@@ -18,6 +18,16 @@ import {
   updateLeadStatusAction,
 } from "@/actions/admin/leads"
 import type { LeadStatus } from "@/lib/validations/admin-lead"
+import { LeadReassignDialog } from "./lead-reassign-dialog"
+import { LeadCategoryDialog } from "./lead-category-dialog"
+import { LeadImportDialog } from "./lead-import-dialog"
+import { assignLeadCategoryAction } from "@/actions/admin/lead-categories"
+
+export type LeadCategoryOption = {
+  id: string
+  name: string
+  color: string | null
+}
 
 export type LeadActionRow = {
   id: string
@@ -42,6 +52,9 @@ export type LeadRowData = {
   createdAt: string
   updatedAt: string
   recentActions: LeadActionRow[]
+  categoryId: string
+  categoryName: string
+  categoryColor: string | null
 }
 
 export type AdminOption = {
@@ -55,6 +68,7 @@ type LeadsClientProps = {
   leads: LeadRowData[]
   admins: AdminOption[]
   currentAdmin: AdminUser
+  categories: LeadCategoryOption[]
 }
 
 function can(admin: AdminUser, permission: PermissionKey) {
@@ -62,18 +76,41 @@ function can(admin: AdminUser, permission: PermissionKey) {
   return admin.permissions?.includes(permission) ?? false
 }
 
-export function LeadsClient({ leads, admins, currentAdmin }: LeadsClientProps) {
+export function LeadsClient({
+  leads,
+  admins,
+  categories,
+  currentAdmin,
+}: LeadsClientProps) {
   const router = useRouter()
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [editingLead, setEditingLead] = useState<LeadRowData | null>(null)
   const [statusLead, setStatusLead] = useState<LeadRowData | null>(null)
   const [actionLead, setActionLead] = useState<LeadRowData | null>(null)
   const [timelineLead, setTimelineLead] = useState<LeadRowData | null>(null)
+  const [reassignLead, setReassignLead] = useState<LeadRowData | null>(null)
+  const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false)
+  const [isImportOpen, setIsImportOpen] = useState(false)
+
+  function handleCategoryChange(lead: LeadRowData, categoryId: string) {
+    startTransition(async () => {
+      const res = await assignLeadCategoryAction(lead.id, categoryId || null)
+      if (!res.success) {
+        toast.error(res.message)
+        return
+      }
+
+      toast.success(res.message)
+      router.refresh()
+    })
+  }
+
   const [isPending, startTransition] = useTransition()
 
   const permissions = {
     canCreate: can(currentAdmin, "CREATE_LEAD"),
     canEdit: can(currentAdmin, "EDIT_LEAD"),
+    canManageCategories: can(currentAdmin, "MANAGE_LEAD_CATEGORIES"),
     canDelete: can(currentAdmin, "DELETE_LEAD"),
     canAssign: can(currentAdmin, "ASSIGN_LEAD"),
     canExport: can(currentAdmin, "EXPORT_LEADS"),
@@ -136,13 +173,38 @@ export function LeadsClient({ leads, admins, currentAdmin }: LeadsClientProps) {
             </p>
           </div>
         </div>
+        <div className="flex items-center gap-2">
+          {permissions.canManageCategories && (
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={() => setIsCategoryManagerOpen(true)}
+            >
+              <Tag className="h-4 w-4" /> Categories
+            </Button>
+          )}
+          {permissions.canCreate && (
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={() => setIsImportOpen(true)}
+            >
+              <ImportIcon className="h-4 w-4" /> Import
+            </Button>
+          )}
+          {permissions.canCreate && (
+            <Button className="gap-2" onClick={() => setIsCreateOpen(true)}>
+              <Plus className="h-4 w-4" /> Create Lead
+            </Button>
+          )}
+        </div>
 
-        {permissions.canCreate && (
+        {/* {permissions.canCreate && (
           <Button className="gap-2" onClick={() => setIsCreateOpen(true)}>
             <Plus className="h-4 w-4" />
             Create Lead
           </Button>
-        )}
+        )} */}
       </div>
 
       <div className="px-4 lg:px-8">
@@ -158,6 +220,9 @@ export function LeadsClient({ leads, admins, currentAdmin }: LeadsClientProps) {
           onTimeline={setTimelineLead}
           onAssign={handleAssign}
           onQuickStatus={handleQuickStatus}
+          onReassign={setReassignLead}
+          onCategoryChange={handleCategoryChange}
+          categories={categories}
         />
       </div>
 
@@ -166,6 +231,7 @@ export function LeadsClient({ leads, admins, currentAdmin }: LeadsClientProps) {
         onOpenChange={setIsCreateOpen}
         admins={admins}
         mode="create"
+        categories={categories}
       />
 
       <LeadFormDialog
@@ -173,6 +239,7 @@ export function LeadsClient({ leads, admins, currentAdmin }: LeadsClientProps) {
         onOpenChange={(open) => !open && setEditingLead(null)}
         admins={admins}
         mode="edit"
+        categories={categories}
         lead={editingLead}
       />
 
@@ -193,6 +260,19 @@ export function LeadsClient({ leads, admins, currentAdmin }: LeadsClientProps) {
         open={!!timelineLead}
         onOpenChange={(open) => !open && setTimelineLead(null)}
       />
+      <LeadReassignDialog
+        lead={reassignLead}
+        admins={admins}
+        open={!!reassignLead}
+        onOpenChange={(open) => !open && setReassignLead(null)}
+      />
+      <LeadCategoryDialog
+        open={isCategoryManagerOpen}
+        onOpenChange={setIsCategoryManagerOpen}
+        categories={categories}
+      />
+
+      <LeadImportDialog open={isImportOpen} onOpenChange={setIsImportOpen} />
     </div>
   )
 }

@@ -21,6 +21,21 @@ import {
   type UpdateLeadStatusInput,
 } from "@/lib/validations/admin-lead"
 import { Prisma } from "@/generated/prisma/client"
+import {
+  ReassignLeadSchema,
+  type ReassignLeadInput,
+} from "@/lib/validations/admin-lead"
+
+import { ImportLeadRowSchema } from "@/lib/validations/admin-lead"
+import { z } from "zod"
+
+export type ImportLeadsResult = {
+  success: boolean
+  message: string
+  created: number
+  skipped: Array<{ row: number; reason: string }>
+  createdCategories: string[]
+}
 
 type ActionResult = {
   success: boolean
@@ -339,5 +354,253 @@ export async function exportLeadsAllowedAction(): Promise<ActionResult> {
   } catch (error) {
     console.error(error)
     return { success: false, message: "Export check failed." }
+  }
+}
+
+export async function reassignLeadForRecheckAction(
+  id: string,
+  data: ReassignLeadInput
+): Promise<ActionResult> {
+  try {
+    const admin = await requirePermission("ASSIGN_LEAD")
+    await assertLeadAccess(id)
+
+    const validated = ReassignLeadSchema.safeParse(data)
+    if (!validated.success) {
+      return { success: false, message: "Invalid reassignment data." }
+    }
+
+    const lead = await prisma.inquiry.findUnique({
+      where: { id },
+      select: {
+        status: true,
+        assignedToId: true,
+        assignedTo: { select: { name: true } },
+      },
+    })
+    if (!lead) return { success: false, message: "Lead not found." }
+
+    const newAssignee = await prisma.admin.findUnique({
+      where: { id: validated.data.assignedToId },
+      select: { id: true, name: true, isActive: true },
+    })
+    if (!newAssignee || !newAssignee.isActive) {
+      return { success: false, message: "Selected admin is not active." }
+    }
+    if (newAssignee.id === lead.assignedToId) {
+      return {
+        success: false,
+        message: "Lead is already assigned to this admin.",
+      }
+    }
+
+    const previousAssigneeName = lead.assignedTo?.name ?? "Unassigned"
+    const previousStatus = lead.status ?? "NEW"
+    const shouldResetStatus = validated.data.resetStatus ?? false
+
+    await prisma.$transaction(async (tx) => {
+      await tx.inquiry.update({
+        where: { id },
+        data: {
+          assignedToId: newAssignee.id,
+          ...(shouldResetStatus ? { status: "FOLLOW_UP" } : {}),
+        },
+      })
+
+      await tx.leadAction.create({
+        data: {
+          inquiryId: id,
+          actionType: "ASSIGNMENT",
+          outcome: "REASSIGNED_FOR_RECHECK",
+          note: [
+            `Reassigned by ${admin.name} from ${previousAssigneeName} to ${newAssignee.name} for a second opinion.`,
+            `Previous status was "${previousStatus}".`,
+            shouldResetStatus
+              ? `Status reset to "FOLLOW_UP" for recheck.`
+              : `Status left unchanged.`,
+            validated.data.note ? `Note: ${validated.data.note}` : null,
+          ]
+            .filter(Boolean)
+            .join(" "),
+        },
+      })
+    })
+
+    revalidatePath("/admin/dashboard")
+    revalidatePath("/admin/leads")
+    return {
+      success: true,
+      message: `Lead reassigned to ${newAssignee.name} for recheck.`,
+    }
+  } catch (error) {
+    console.error(error)
+    return {
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Failed to reassign lead.",
+    }
+  }
+}
+
+export async function importLeadsAction(
+  rows: Record<string, unknown>[],
+  options: { autoCreateCategories?: boolean } = {}
+): Promise<ImportLeadsResult> {
+  try {
+    const admin = await requirePermission("CREATE_LEAD")
+
+    if (rows.length === 0) {
+      return {
+        success: false,
+        message: "No rows to import.",
+        created: 0,
+        skipped: [],
+        createdCategories: [],
+      }
+    }
+    if (rows.length > 500) {
+      return {
+        success: false,
+        message:
+          "Import is limited to 500 rows at a time. Please split your file.",
+        created: 0,
+        skipped: [],
+        createdCategories: [],
+      }
+    }
+
+    const canAssign = hasPermission(admin, "ASSIGN_LEAD")
+    const autoCreateCategories = options.autoCreateCategories ?? true
+
+    const existingCategories = await prisma.leadCategory.findMany({
+      select: { id: true, name: true },
+    })
+    const categoryByName = new Map(
+      existingCategories.map((c) => [c.name.toLowerCase(), c.id])
+    )
+    const createdCategoryNames = new Set<string>()
+
+    const assigneeCache = new Map<string, string | null>()
+    async function resolveAssigneeId(email?: string) {
+      if (!email) return null
+      const key = email.trim().toLowerCase()
+      if (!key) return null
+      if (assigneeCache.has(key)) return assigneeCache.get(key) ?? null
+      const found = await prisma.admin.findFirst({
+        where: { email: key },
+        select: { id: true, isActive: true },
+      })
+      const resolvedId = found?.isActive ? found.id : null
+      assigneeCache.set(key, resolvedId)
+      return resolvedId
+    }
+
+    const skipped: Array<{ row: number; reason: string }> = []
+    const validRows: Array<{
+      data: z.infer<typeof ImportLeadRowSchema>
+      categoryId: string | null
+      assignedToId: string | null
+    }> = []
+
+    for (let i = 0; i < rows.length; i++) {
+      const parsed = ImportLeadRowSchema.safeParse(rows[i])
+      // if (!parsed.success) {
+      //   skipped.push({
+      //     row: i + 2,
+      //     reason: parsed.error.issues[0]?.message ?? "Invalid row data.",
+      //   })
+      //   continue
+      // }
+      if (!parsed.success) {
+        skipped.push({
+          row: i + 2,
+          reason: parsed.error.issues
+            .map(
+              (issue) =>
+                `${issue.path.join(".")}: ${issue.message} (received ${JSON.stringify(issue.input)})`
+            )
+            .join(", "),
+        })
+        continue
+      }
+
+      let categoryId: string | null = null
+      const categoryName = parsed.data.category?.trim()
+      if (categoryName) {
+        const key = categoryName.toLowerCase()
+        if (categoryByName.has(key)) {
+          categoryId = categoryByName.get(key) ?? null
+        } else if (autoCreateCategories) {
+          const created = await prisma.leadCategory.create({
+            data: { name: categoryName },
+          })
+          categoryByName.set(key, created.id)
+          categoryId = created.id
+          createdCategoryNames.add(categoryName)
+        }
+      }
+
+      const assignedToId = canAssign
+        ? await resolveAssigneeId(parsed.data.assignedToEmail)
+        : admin.id
+      validRows.push({ data: parsed.data, categoryId, assignedToId })
+    }
+
+    let created = 0
+    await prisma.$transaction(async (tx) => {
+      for (const row of validRows) {
+        const lead = await tx.inquiry.create({
+          data: {
+            name: row.data.name,
+            email: row.data.email,
+            phone: row.data.phone,
+            service: row.data.service,
+            message: row.data.message,
+            status: row.data.status || "NEW",
+            rewardValue: row.data.rewardValue
+              ? Number(row.data.rewardValue)
+              : null,
+            source: row.data.source || "Import",
+            utm_source: row.data.utm_source,
+            utm_medium: row.data.utm_medium,
+            utm_campaign: row.data.utm_campaign,
+            utm_content: row.data.utm_content,
+            utm_term: row.data.utm_term,
+            categoryId: row.categoryId,
+            assignedToId: row.assignedToId,
+          },
+        })
+        await tx.leadAction.create({
+          data: {
+            inquiryId: lead.id,
+            actionType: "LEAD_CREATED",
+            outcome: row.data.status || "NEW",
+            note: `Imported by ${admin.name}.`,
+          },
+        })
+        created++
+      }
+    })
+
+    revalidatePath("/admin/dashboard")
+    revalidatePath("/admin/leads")
+
+    return {
+      success: true,
+      message: `Imported ${created} lead${created === 1 ? "" : "s"}${skipped.length ? `, skipped ${skipped.length}` : ""}.`,
+      created,
+      skipped,
+      createdCategories: Array.from(createdCategoryNames),
+    }
+  } catch (error) {
+    console.error(error)
+    return {
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Failed to import leads.",
+      created: 0,
+      skipped: [],
+      createdCategories: [],
+    }
   }
 }
