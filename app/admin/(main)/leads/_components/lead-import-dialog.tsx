@@ -35,7 +35,6 @@ type ImportSummary = {
   skipped: Array<{ row: number; reason: string }>
   createdCategories: string[]
 }
-
 const TEMPLATE_HEADERS = [
   "name",
   "email",
@@ -46,6 +45,7 @@ const TEMPLATE_HEADERS = [
   "rewardValue",
   "source",
   "category",
+  "comment",
   "assignedToEmail",
   "utm_source",
   "utm_medium",
@@ -63,6 +63,7 @@ const TEMPLATE_EXAMPLE = [
   "5000",
   "Website",
   "Corporate",
+  "Called once, requested a callback tomorrow",
   "sales@yourcompany.com",
   "google",
   "cpc",
@@ -163,8 +164,8 @@ export function LeadImportDialog({
           </DialogTitle>
           <DialogDescription className="flex flex-wrap items-center gap-2">
             <span>
-              Upload a CSV or Excel file. Required columns: name, email, phone,
-              service.
+              Required columns: name, email, phone, service. Add a &quot;comment&quot;
+              column to attach an admin note to each imported lead.
             </span>
             <button
               type="button"

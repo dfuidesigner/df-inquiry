@@ -4,6 +4,7 @@ import { useState } from "react"
 import {
   type ColumnDef,
   type ColumnFiltersState,
+  type PaginationState,
   type SortingState,
   type VisibilityState,
   flexRender,
@@ -87,6 +88,10 @@ export function ReusableDataTable<TData extends Record<string, unknown>>({
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = useState({})
   const [globalFilter, setGlobalFilter] = useState("")
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: defaultPageSize,
+  })
 
   const tableColumns: ColumnDef<TData>[] = enableRowSelection
     ? [
@@ -137,12 +142,15 @@ export function ReusableDataTable<TData extends Record<string, unknown>>({
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
     onGlobalFilterChange: setGlobalFilter,
+    onPaginationChange: setPagination, // NEW
+    autoResetPageIndex: false,
     state: {
       sorting,
       columnFilters,
       columnVisibility,
       rowSelection,
       globalFilter,
+      pagination,
     },
     globalFilterFn: (row, _columnId, filterValue) => {
       const search = String(filterValue).toLowerCase()
@@ -151,11 +159,11 @@ export function ReusableDataTable<TData extends Record<string, unknown>>({
         return value != null && String(value).toLowerCase().includes(search)
       })
     },
-    initialState: {
-      pagination: {
-        pageSize: defaultPageSize,
-      },
-    },
+    // initialState: {
+    //   pagination: {
+    //     pageSize: defaultPageSize,
+    //   },
+    // },
   })
 
   const clearAllFilters = () => {
@@ -163,6 +171,7 @@ export function ReusableDataTable<TData extends Record<string, unknown>>({
     filterConfigs.forEach((config) => {
       table.getColumn(config.columnId)?.setFilterValue("")
     })
+    table.setPageIndex(0)
   }
 
   const hasActiveFilters =
@@ -214,7 +223,10 @@ export function ReusableDataTable<TData extends Record<string, unknown>>({
             <Input
               placeholder={searchPlaceholder}
               value={globalFilter ?? ""}
-              onChange={(event) => setGlobalFilter(String(event.target.value))}
+              onChange={(event) => {
+                setGlobalFilter(String(event.target.value))
+                table.setPageIndex(0)
+              }}
               className="border-gray-300 pl-9 focus:border-primary"
             />
           </div>
@@ -254,6 +266,7 @@ export function ReusableDataTable<TData extends Record<string, unknown>>({
                   table
                     .getColumn(filterConfig.columnId)
                     ?.setFilterValue(e.target.value || "")
+                  table.setPageIndex(0)
                 }}
               />
             ) : (
@@ -272,6 +285,7 @@ export function ReusableDataTable<TData extends Record<string, unknown>>({
                   } else {
                     column?.setFilterValue(value === "all" ? "" : value)
                   }
+                  table.setPageIndex(0)
                 }}
               >
                 <SelectTrigger className="h-9 w-45 border-gray-300">

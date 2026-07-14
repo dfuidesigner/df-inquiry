@@ -22,6 +22,17 @@ export default async function LeadsPage() {
       include: {
         assignedTo: { select: { id: true, name: true, email: true } },
         category: { select: { id: true, name: true, color: true } },
+        reassignments: {
+          orderBy: { createdAt: "desc" },
+          select: {
+            createdAt: true,
+            fromAdmin: { select: { name: true } },
+            toAdmin: { select: { name: true } },
+          },
+        },
+        _count: {
+          select: { reassignments: true },
+        },
         actions: {
           orderBy: { createdAt: "desc" },
           take: 50,
@@ -46,31 +57,47 @@ export default async function LeadsPage() {
       })
     : []
 
-  const leads: LeadRowData[] = rawLeads.map((lead) => ({
-    id: lead.id,
-    name: lead.name,
-    email: lead.email,
-    phone: lead.phone,
-    service: lead.service,
-    message: lead.message ?? "",
-    status: lead.status ?? "NEW",
-    rewardValue: lead.rewardValue ?? null,
-    source: lead.source ?? "",
-    assignedToId: lead.assignedToId ?? "",
-    assignedToName: lead.assignedTo?.name ?? "Unassigned",
-    createdAt: lead.createdAt.toISOString(),
-    updatedAt: lead.updatedAt.toISOString(),
-    categoryId: lead.categoryId ?? "",
-    categoryName: lead.category?.name ?? "",
-    categoryColor: lead.category?.color ?? null,
-    recentActions: lead.actions.map((action) => ({
-      id: action.id,
-      actionType: action.actionType,
-      outcome: action.outcome,
-      note: action.note ?? "",
-      createdAt: action.createdAt.toISOString(),
-    })),
-  }))
+  const leads: LeadRowData[] = rawLeads.map((lead) => {
+    const reassignmentCount = lead._count.reassignments
+    const latestReassignment = lead.reassignments[0]
+
+    return {
+      id: lead.id,
+      name: lead.name,
+      email: lead.email,
+      phone: lead.phone,
+      service: lead.service,
+      message: lead.message ?? "",
+      status: lead.status ?? "NEW",
+      rewardValue: lead.rewardValue ?? null,
+      source: lead.source ?? "",
+      assignedToId: lead.assignedToId ?? "",
+      assignedToName: lead.assignedTo?.name ?? "Unassigned",
+      createdAt: lead.createdAt.toISOString(),
+      updatedAt: lead.updatedAt.toISOString(),
+      categoryId: lead.categoryId ?? "",
+      categoryName: lead.category?.name ?? "",
+      categoryColor: lead.category?.color ?? null,
+      reassignmentCount,
+      reassignmentBucket:
+        reassignmentCount === 0
+          ? "Not reassigned"
+          : reassignmentCount === 1
+            ? "Reassigned once"
+            : "Reassigned 2+ times",
+      lastReassignedFromName: latestReassignment?.fromAdmin?.name ?? "",
+      lastReassignedToName: latestReassignment?.toAdmin?.name ?? "",
+      lastReassignedAt: latestReassignment?.createdAt.toISOString() ?? "",
+      lastNote: lead.actions[0]?.note ?? "",
+      recentActions: lead.actions.map((action) => ({
+        id: action.id,
+        actionType: action.actionType,
+        outcome: action.outcome,
+        note: action.note ?? "",
+        createdAt: action.createdAt.toISOString(),
+      })),
+    }
+  })
 
   const adminOptions: AdminOption[] = admins.map((item) => ({
     id: item.id,

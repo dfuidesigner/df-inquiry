@@ -51,10 +51,16 @@ export type LeadRowData = {
   assignedToName: string
   createdAt: string
   updatedAt: string
-  recentActions: LeadActionRow[]
   categoryId: string
   categoryName: string
   categoryColor: string | null
+  reassignmentCount: number
+  reassignmentBucket: string
+  lastReassignedFromName: string
+  lastReassignedToName: string
+  lastReassignedAt: string
+  lastNote: string
+  recentActions: LeadActionRow[]
 }
 
 export type AdminOption = {

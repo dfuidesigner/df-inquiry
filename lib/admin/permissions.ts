@@ -67,18 +67,61 @@ export async function requirePermission(permission: PermissionKey) {
   return admin
 }
 
+// export function canViewLead(
+//   admin: AdminWithPermissions,
+//   lead: { assignedToId: string | null }
+// ) {
+//   if (hasPermission(admin, "VIEW_ALL_LEADS")) return true
+//   if (!hasPermission(admin, "VIEW_ASSIGNED_LEADS")) return false
+//   return lead.assignedToId === admin.id
+// }
+
+// export function leadAccessWhere(admin: AdminWithPermissions) {
+//   if (hasPermission(admin, "VIEW_ALL_LEADS")) return {}
+//   if (hasPermission(admin, "VIEW_ASSIGNED_LEADS"))
+//     return { assignedToId: admin.id }
+//   return { id: "__no_leads_for_this_admin__" }
+// }
+
+
+export const leadAccessSelect = {
+  id: true,
+  assignedToId: true,
+  reassignments: { select: { fromAdminId: true } },
+} as const
+
+export function toLeadAccessInput(lead: {
+  assignedToId: string | null
+  reassignments: { fromAdminId: string | null }[]
+}) {
+  return {
+    assignedToId: lead.assignedToId,
+    reassignedFromAdminIds: lead.reassignments
+      .map((r) => r.fromAdminId)
+      .filter((x): x is string => !!x),
+  }
+}
+
 export function canViewLead(
   admin: AdminWithPermissions,
-  lead: { assignedToId: string | null }
+  lead: { assignedToId: string | null; reassignedFromAdminIds?: string[] }
 ) {
   if (hasPermission(admin, "VIEW_ALL_LEADS")) return true
   if (!hasPermission(admin, "VIEW_ASSIGNED_LEADS")) return false
-  return lead.assignedToId === admin.id
+  if (lead.assignedToId === admin.id) return true
+  // Admin was reassigned away from this lead at some point — keep visibility.
+  return lead.reassignedFromAdminIds?.includes(admin.id) ?? false
 }
 
 export function leadAccessWhere(admin: AdminWithPermissions) {
   if (hasPermission(admin, "VIEW_ALL_LEADS")) return {}
-  if (hasPermission(admin, "VIEW_ASSIGNED_LEADS"))
-    return { assignedToId: admin.id }
+  if (hasPermission(admin, "VIEW_ASSIGNED_LEADS")) {
+    return {
+      OR: [
+        { assignedToId: admin.id },
+        { reassignments: { some: { fromAdminId: admin.id } } },
+      ],
+    }
+  }
   return { id: "__no_leads_for_this_admin__" }
 }

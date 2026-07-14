@@ -47,6 +47,10 @@ model Admin {
   assignedLeads Inquiry[]
   adminTasks    AdminTask[]
 
+  reassignmentsFrom LeadReassignment[] @relation("ReassignmentFromAdmin")
+  reassignmentsTo   LeadReassignment[] @relation("ReassignmentToAdmin")
+  reassignmentsMade LeadReassignment[] @relation("ReassignmentByAdmin")
+
   @@map("admins")
 }
 
@@ -101,10 +105,9 @@ model Inquiry {
   utm_term     String?
 
   assignedToId String?
-  assignedTo   Admin?  @relation(fields: [assignedToId], references: [id], onDelete: SetNull)
-  categoryId String?
-  category   LeadCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-
+  assignedTo   Admin?        @relation(fields: [assignedToId], references: [id], onDelete: SetNull)
+  categoryId   String?
+  category     LeadCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
   actions LeadAction[]
 
@@ -112,9 +115,11 @@ model Inquiry {
   updatedAt  DateTime    @updatedAt
   adminTasks AdminTask[]
 
+  reassignments LeadReassignment[]
+
   @@index([assignedToId])
   @@index([status])
-  @@index([categoryId]) 
+  @@index([categoryId])
   @@index([createdAt])
   @@map("inquiry")
 }
@@ -221,4 +226,30 @@ model CareerSubmission {
   @@index([role])
   @@index([createdAt])
   @@map("career_submissions")
+}
+
+model LeadReassignment {
+  id String @id @default(cuid())
+
+  inquiryId String
+  inquiry   Inquiry @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+
+  fromAdminId String?
+  fromAdmin   Admin?  @relation("ReassignmentFromAdmin", fields: [fromAdminId], references: [id], onDelete: SetNull)
+
+  toAdminId String
+  toAdmin   Admin  @relation("ReassignmentToAdmin", fields: [toAdminId], references: [id], onDelete: Cascade)
+
+  reassignedById String
+  reassignedBy   Admin  @relation("ReassignmentByAdmin", fields: [reassignedById], references: [id], onDelete: Cascade)
+
+  previousStatus String?
+  note           String? @db.Text
+
+  createdAt DateTime @default(now())
+
+  @@index([inquiryId])
+  @@index([fromAdminId])
+  @@index([toAdminId])
+  @@map("lead_reassignments")
 }

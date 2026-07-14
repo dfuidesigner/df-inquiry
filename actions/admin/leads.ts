@@ -6,7 +6,9 @@ import {
   canViewLead,
   hasPermission,
   requireAdminWithPermissions,
+  leadAccessSelect,
   requirePermission,
+  toLeadAccessInput,
 } from "@/lib/admin/permissions"
 import {
   AssignLeadSchema,
@@ -42,19 +44,23 @@ type ActionResult = {
   message: string
 }
 
+function normalizeCategoryId(categoryId?: string | null) {
+  return categoryId && categoryId.trim().length > 0 ? categoryId : null
+}
+
 async function assertLeadAccess(id: string) {
   const admin = await requireAdminWithPermissions()
 
   const lead = await prisma.inquiry.findUnique({
     where: { id },
-    select: { id: true, assignedToId: true },
+    select: leadAccessSelect,
   })
 
   if (!lead) {
     throw new Error("Lead not found.")
   }
 
-  if (!canViewLead(admin, lead)) {
+  if (!canViewLead(admin, toLeadAccessInput(lead))) {
     throw new Error("You do not have access to this lead.")
   }
 
@@ -76,7 +82,7 @@ export async function createLeadAction(
       return { success: false, message: "Invalid lead data." }
     }
 
-    const { assignedToId, rewardValue, ...lead } = validated.data
+    const { assignedToId, rewardValue, categoryId, ...lead } = validated.data
     const finalAssignedToId = hasPermission(admin, "ASSIGN_LEAD")
       ? normalizeAssignedAdminId(assignedToId)
       : admin.id
@@ -87,6 +93,7 @@ export async function createLeadAction(
           ...lead,
           rewardValue: rewardValue ? parseFloat(rewardValue) : null,
           assignedToId: finalAssignedToId,
+          categoryId: normalizeCategoryId(categoryId),
         },
       })
 
@@ -128,7 +135,9 @@ export async function updateLeadAction(
       return { success: false, message: "Invalid lead data." }
     }
 
-    const { assignedToId, rewardValue, ...lead } = validated.data
+    console.log(validated.data)
+
+    const { assignedToId, rewardValue, categoryId, ...lead } = validated.data
 
     await prisma.$transaction(async (tx) => {
       await tx.inquiry.update({
@@ -141,6 +150,9 @@ export async function updateLeadAction(
           ...(assignedToId === undefined || !hasPermission(admin, "ASSIGN_LEAD")
             ? {}
             : { assignedToId: normalizeAssignedAdminId(assignedToId) }),
+          ...(categoryId === undefined
+            ? {}
+            : { categoryId: normalizeCategoryId(categoryId) }),
         },
       })
 
@@ -407,6 +419,17 @@ export async function reassignLeadForRecheckAction(
         },
       })
 
+      await tx.leadReassignment.create({
+        data: {
+          inquiryId: id,
+          fromAdminId: lead.assignedToId,
+          toAdminId: newAssignee.id,
+          reassignedById: admin.id,
+          previousStatus,
+          note: validated.data.note || null,
+        },
+      })
+
       await tx.leadAction.create({
         data: {
           inquiryId: id,
@@ -430,7 +453,7 @@ export async function reassignLeadForRecheckAction(
     revalidatePath("/admin/leads")
     return {
       success: true,
-      message: `Lead reassigned to ${newAssignee.name} for recheck.`,
+      message: `Lead reassigned to ${newAssignee.name}. ${previousAssigneeName} keeps visibility into this lead.`,
     }
   } catch (error) {
     console.error(error)
@@ -575,7 +598,9 @@ export async function importLeadsAction(
             inquiryId: lead.id,
             actionType: "LEAD_CREATED",
             outcome: row.data.status || "NEW",
-            note: `Imported by ${admin.name}.`,
+            note: row.data.comment
+              ? `Imported by ${admin.name}. Comment: ${row.data.comment}`
+              : `Imported by ${admin.name}.`,
           },
         })
         created++

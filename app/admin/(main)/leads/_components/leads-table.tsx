@@ -7,6 +7,7 @@ import {
   History,
   MoreHorizontal,
   PhoneCall,
+  Repeat,
   Trash2,
   UserRoundCheck,
 } from "lucide-react"
@@ -38,6 +39,12 @@ import type {
   LeadCategoryOption,
   LeadRowData,
 } from "./leads-client"
+
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 type LeadsTableProps = {
   leads: LeadRowData[]
@@ -112,6 +119,15 @@ export function LeadsTable({
       options: Array.from(
         new Set(leads.map((l) => l.categoryName).filter(Boolean))
       ).map((name) => ({ label: name, value: name })),
+    },
+    {
+      columnId: "reassignmentBucket",
+      label: "Reassigned",
+      options: [
+        { label: "Not reassigned", value: "Not reassigned" },
+        { label: "Reassigned once", value: "Reassigned once" },
+        { label: "Reassigned 2+ times", value: "Reassigned 2+ times" },
+      ],
     },
   ]
 
@@ -238,14 +254,80 @@ export function LeadsTable({
         ),
     },
     {
+      accessorKey: "reassignmentBucket",
+      header: "Reassigned",
+      cell: ({ row }) => {
+        const {
+          reassignmentCount,
+          lastReassignedFromName,
+          lastReassignedToName,
+          lastReassignedAt,
+        } = row.original
+
+        if (reassignmentCount === 0) {
+          return <span className="text-muted-foreground">-</span>
+        }
+
+        const content = (
+          <div className="flex items-center gap-1.5 text-sm">
+            <Repeat className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="whitespace-nowrap">
+              {lastReassignedFromName || "Unassigned"} → {lastReassignedToName}
+            </span>
+            {reassignmentCount > 1 && (
+              <Badge variant="secondary" className="px-1.5 text-[10px]">
+                ×{reassignmentCount}
+              </Badge>
+            )}
+          </div>
+        )
+
+        if (!lastReassignedAt) return content
+
+        return (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="w-fit cursor-default">{content}</div>
+            </TooltipTrigger>
+            <TooltipContent>
+              Last reassigned {formatDate(lastReassignedAt)}
+            </TooltipContent>
+          </Tooltip>
+        )
+      },
+    },
+    {
+      id: "lastNote",
+      header: "Last Note",
+      cell: ({ row }) => {
+        const note = row.original.lastNote
+        if (!note) {
+          return <span className="text-muted-foreground">-</span>
+        }
+
+        return (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="block max-w-56 cursor-default truncate text-sm text-muted-foreground">
+                {note}
+              </span>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-80 whitespace-pre-line">
+              {note}
+            </TooltipContent>
+          </Tooltip>
+        )
+      },
+    },
+    {
       accessorKey: "rewardValue",
-      header: "Value",
+      header: "Expected Budget",
       cell: ({ row }) =>
         row.original.rewardValue == null ? (
           <span className="text-muted-foreground">-</span>
         ) : (
           <span className="font-medium">
-            ${row.original.rewardValue.toFixed(2)}
+            ₹{row.original.rewardValue.toFixed(2)}
           </span>
         ),
     },

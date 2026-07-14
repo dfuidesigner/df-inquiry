@@ -11,6 +11,14 @@ export const LEAD_STATUSES = [
 
 export const LeadStatusSchema = z.enum(LEAD_STATUSES)
 
+// const emptyStringToNull = (val: unknown) =>
+//   typeof val === "string" && val.trim() === "" ? null : val
+
+// const OptionalCategoryIdSchema = z.preprocess(
+//   emptyStringToNull,
+//   z.string().nullable().optional()
+// )
+
 export const CreateLeadSchema = z.object({
   name: z.string().min(2, "Name is required"),
   email: z.string().email("Invalid email address"),
@@ -108,6 +116,7 @@ export const ImportLeadRowSchema = z.object({
   rewardValue: z.union([z.string(), z.number()]).optional(),
   source: optionalImportString,
   category: optionalImportString,
+  comment: optionalImportString,     
   assignedToEmail: optionalImportString,
   utm_source: optionalImportString,
   utm_medium: optionalImportString,

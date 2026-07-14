@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 import { prisma } from "@/lib/prisma"
 import {
   canViewLead,
+  leadAccessSelect,
   requireAdminWithPermissions,
   requirePermission,
 } from "@/lib/admin/permissions"
@@ -127,7 +128,8 @@ export async function assignLeadCategoryAction(
 
     const lead = await prisma.inquiry.findUnique({
       where: { id },
-      select: { id: true, assignedToId: true },
+      // select: { id: true, assignedToId: true },
+      select: leadAccessSelect,
     })
     if (!lead) return { success: false, message: "Lead not found." }
     if (!canViewLead(admin, lead)) {
