@@ -7,7 +7,7 @@ import {
   CalendarDays,
   CheckCircle2,
   ClipboardList,
-  Filter,
+  // Filter,
   LineChart,
   ShieldCheck,
   Target,
@@ -122,7 +122,17 @@ function StatCard({
     </Card>
   )
 }
-
+const chartColors = [
+  "bg-blue-500",
+  "bg-emerald-500",
+  "bg-violet-500",
+  "bg-orange-500",
+  "bg-pink-500",
+  "bg-cyan-500",
+  "bg-red-500",
+  "bg-indigo-500",
+  "bg-teal-500",
+]
 function BarList({
   points,
   colors = false,
@@ -134,7 +144,7 @@ function BarList({
 
   return (
     <div className="space-y-4">
-      {points.map((point) => (
+      {points.map((point, index) => (
         <div key={point.label} className="space-y-2">
           <div className="flex items-center justify-between gap-3 text-sm">
             <span className="truncate font-medium">
@@ -144,10 +154,11 @@ function BarList({
           </div>
           <div className="h-2 overflow-hidden rounded-full bg-muted">
             <div
-              className={`h-full rounded-full ${
+              className={`h-full rounded-full transition-all duration-300 ${
                 colors
-                  ? (statusTones[point.label] ?? "bg-primary")
-                  : "bg-primary"
+                  ? (statusTones[point.label] ??
+                    chartColors[index % chartColors.length])
+                  : chartColors[index % chartColors.length]
               }`}
               style={{ width: `${Math.max(4, (point.value / max) * 100)}%` }}
             />
@@ -162,7 +173,7 @@ function MonthTrendBars({ points }: { points: ChartPoint[] }) {
   const max = maxValue(points)
 
   return (
-    <div className="flex h-56 items-end gap-1 rounded-lg border bg-muted/20 p-4">
+    <div className="flex h-full min-h-[14rem] items-end gap-1 rounded-lg border bg-muted/20 p-4">
       {points.map((point) => {
         const day = Number(point.label)
         const showLabel = day === 1 || day % 5 === 0 || day === points.length
@@ -173,7 +184,7 @@ function MonthTrendBars({ points }: { points: ChartPoint[] }) {
             className="flex h-full min-w-2 flex-1 flex-col justify-end gap-2"
           >
             <div
-              className="min-h-1 rounded-t-sm bg-primary transition-all"
+              className="min-h-1 rounded-t-sm bg-blue-900 transition-all"
               style={{ height: `${Math.max(4, (point.value / max) * 100)}%` }}
               title={`${point.value} leads on day ${point.label}`}
             />
@@ -296,13 +307,7 @@ export function DashboardClient({ data }: DashboardClientProps) {
           </div>
         </div>
 
-        {/* Filters — always visible on the page, no click required to reveal */}
         <div className="flex flex-wrap items-end gap-3 rounded-lg border bg-muted/20 p-3">
-          <div className="flex items-center gap-1.5 pr-1 text-sm font-medium text-muted-foreground">
-            <Filter className="h-4 w-4" />
-            Filters
-          </div>
-
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">Status</Label>
             <Select
@@ -410,7 +415,8 @@ export function DashboardClient({ data }: DashboardClientProps) {
       </div>
 
       <div className="grid gap-6 px-4 lg:px-8 xl:grid-cols-[1.35fr_0.9fr]">
-        <Card>
+        {/* FIXED: Added flex flex-col to force the card to expand uniformly */}
+        <Card className="flex flex-col">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <LineChart className="h-5 w-5" />
@@ -420,7 +426,8 @@ export function DashboardClient({ data }: DashboardClientProps) {
               Daily lead creation for {data.selectedMonthLabel}.
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          {/* FIXED: Added flex-1 to CardContent so the chart space expands */}
+          <CardContent className="flex-1">
             <MonthTrendBars points={data.monthlyTrend} />
           </CardContent>
         </Card>
