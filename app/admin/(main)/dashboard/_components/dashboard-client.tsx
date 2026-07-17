@@ -7,6 +7,7 @@ import {
   CalendarDays,
   CheckCircle2,
   ClipboardList,
+  Filter,
   LineChart,
   ShieldCheck,
   Target,
@@ -24,6 +25,13 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 export type ChartPoint = {
   label: string
@@ -55,6 +63,14 @@ export type DashboardData = {
     value: number | null
     createdAt: string
   }>
+  filters: {
+    statuses: string[]
+    categories: Array<{ id: string; name: string }>
+    admins: Array<{ id: string; name: string }>
+    selectedStatus: string
+    selectedAssignedToId: string
+    selectedCategoryId: string
+  }
 }
 
 type DashboardClientProps = {
@@ -73,7 +89,7 @@ const statusTones: Record<string, string> = {
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: "USD",
+    currency: "INR",
     maximumFractionDigits: 0,
   }).format(value)
 }
@@ -173,59 +189,192 @@ function MonthTrendBars({ points }: { points: ChartPoint[] }) {
 
 export function DashboardClient({ data }: DashboardClientProps) {
   const router = useRouter()
+  const { filters } = data
+
+  function buildQuery(overrides: Record<string, string>) {
+    const params = new URLSearchParams()
+    params.set("month", data.selectedMonth)
+    if (filters.selectedStatus) params.set("status", filters.selectedStatus)
+    if (filters.selectedAssignedToId)
+      params.set("assignedToId", filters.selectedAssignedToId)
+    if (filters.selectedCategoryId)
+      params.set("categoryId", filters.selectedCategoryId)
+
+    for (const [key, value] of Object.entries(overrides)) {
+      if (value) {
+        params.set(key, value)
+      } else {
+        params.delete(key)
+      }
+    }
+
+    return `/admin/dashboard?${params.toString()}`
+  }
 
   function handleMonthChange(month: string) {
     if (!month) return
-    router.push(`/admin/dashboard?month=${month}`)
+    router.push(buildQuery({ month }))
+  }
+
+  function handleStatusChange(status: string) {
+    router.push(buildQuery({ status: status === "all" ? "" : status }))
+  }
+
+  function handleAdminChange(assignedToId: string) {
+    router.push(
+      buildQuery({ assignedToId: assignedToId === "all" ? "" : assignedToId })
+    )
+  }
+
+  function handleCategoryChange(categoryId: string) {
+    router.push(
+      buildQuery({ categoryId: categoryId === "all" ? "" : categoryId })
+    )
   }
 
   function resetToCurrentMonth() {
     router.push("/admin/dashboard")
   }
 
+  function clearFilters() {
+    router.push(`/admin/dashboard?month=${data.selectedMonth}`)
+  }
+
+  const hasActiveFilters =
+    !!filters.selectedStatus ||
+    !!filters.selectedAssignedToId ||
+    !!filters.selectedCategoryId
+
   return (
     <div className="flex flex-col space-y-6 pb-8">
-      <div className="flex flex-col items-start justify-between gap-4 border-b px-4 pt-4 pb-6 lg:px-8 xl:flex-row xl:items-center">
-        <div>
-          <div className="mb-2 flex flex-wrap items-center gap-2">
-            <Badge variant="outline">{data.role.replace("_", " ")}</Badge>
-            <Badge className="gap-1" variant="secondary">
-              <ArrowUpRight className="h-3 w-3" />
-              {data.stats.conversionRate}% conversion
-            </Badge>
-            <Badge className="gap-1" variant="secondary">
-              <CalendarDays className="h-3 w-3" />
-              {data.selectedMonthLabel}
-            </Badge>
+      <div className="flex flex-col gap-4 border-b px-4 pt-4 pb-6 lg:px-8">
+        <div className="flex flex-col items-start justify-between gap-4 xl:flex-row xl:items-center">
+          <div>
+            <div className="mb-2 flex flex-wrap items-center gap-2">
+              <Badge variant="outline">{data.role.replace("_", " ")}</Badge>
+              <Badge className="gap-1" variant="secondary">
+                <ArrowUpRight className="h-3 w-3" />
+                {data.stats.conversionRate}% conversion
+              </Badge>
+              <Badge className="gap-1" variant="secondary">
+                <CalendarDays className="h-3 w-3" />
+                {data.selectedMonthLabel}
+              </Badge>
+            </div>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">
+              LMS Dashboard
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Lead pipeline, conversion, team load, and service demand for the
+              selected month.
+            </p>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            LMS Dashboard
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Lead pipeline, conversion, team load, and service demand for the
-            selected month.
-          </p>
+
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-end">
+            <div className="space-y-1.5">
+              <Label
+                htmlFor="dashboard-month"
+                className="text-xs text-muted-foreground"
+              >
+                Month
+              </Label>
+              <Input
+                id="dashboard-month"
+                type="month"
+                value={data.selectedMonth}
+                onChange={(event) => handleMonthChange(event.target.value)}
+                className="w-full sm:w-44"
+              />
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={resetToCurrentMonth}
+            >
+              Current Month
+            </Button>
+          </div>
         </div>
 
-        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-end">
-          <div className="space-y-1.5">
-            <Label
-              htmlFor="dashboard-month"
-              className="text-xs text-muted-foreground"
-            >
-              Month
-            </Label>
-            <Input
-              id="dashboard-month"
-              type="month"
-              value={data.selectedMonth}
-              onChange={(event) => handleMonthChange(event.target.value)}
-              className="w-full sm:w-44"
-            />
+        {/* Filters — always visible on the page, no click required to reveal */}
+        <div className="flex flex-wrap items-end gap-3 rounded-lg border bg-muted/20 p-3">
+          <div className="flex items-center gap-1.5 pr-1 text-sm font-medium text-muted-foreground">
+            <Filter className="h-4 w-4" />
+            Filters
           </div>
-          <Button type="button" variant="outline" onClick={resetToCurrentMonth}>
-            Current Month
-          </Button>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">Status</Label>
+            <Select
+              value={filters.selectedStatus || "all"}
+              onValueChange={handleStatusChange}
+            >
+              <SelectTrigger className="h-9 w-44">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                {filters.statuses.map((status) => (
+                  <SelectItem key={status} value={status}>
+                    {status.replace("_", " ")}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">
+              Assigned Admin
+            </Label>
+            <Select
+              value={filters.selectedAssignedToId || "all"}
+              onValueChange={handleAdminChange}
+            >
+              <SelectTrigger className="h-9 w-48">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Admins</SelectItem>
+                {filters.admins.map((a) => (
+                  <SelectItem key={a.id} value={a.id}>
+                    {a.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">Category</Label>
+            <Select
+              value={filters.selectedCategoryId || "all"}
+              onValueChange={handleCategoryChange}
+            >
+              <SelectTrigger className="h-9 w-44">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                {filters.categories.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {hasActiveFilters && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={clearFilters}
+            >
+              Clear Filters
+            </Button>
+          )}
         </div>
       </div>
 
@@ -243,7 +392,7 @@ export function DashboardClient({ data }: DashboardClientProps) {
           icon={CheckCircle2}
         />
         <StatCard
-          title="Pipeline Value"
+          title="Expected Budget"
           value={formatCurrency(data.stats.totalValue)}
           subtitle="Total reward value"
           icon={BadgeDollarSign}

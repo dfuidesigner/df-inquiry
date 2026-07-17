@@ -6,6 +6,7 @@ import {
   BriefcaseBusiness,
   // ClipboardCheck,
   ClipboardList,
+  History,
   LayoutDashboard,
   ListTodo,
   LucideIcon,
@@ -67,6 +68,12 @@ const adminNavigation: Array<{ label: string; items: NavigationItem[] }> = [
         icon: ListTodo,
       },
       {
+        title: "Activity Log",
+        url: "/admin/activity",
+        icon: History,
+        permissions: ["VIEW_ACTIVITY_LOG"],
+      },
+      {
         title: "Settings",
         url: "/admin/settings",
         icon: Settings,
@@ -101,14 +108,14 @@ export function AdminSidebar({ admin, ...props }: AdminSidebarProps) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
-              <Link href="/admin/dashboard">
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                  <Logo size={24} className="text-current" />
+              <Link href="/admin/dashboard" className="flex justify-center">
+                <div className="flex aspect-square items-center justify-center rounded-lg">
+                  <Logo size={100} className="text-current" />
                 </div>
-                <div className="grid flex-1 text-left text-sm leading-tight">
+                {/* <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">DF</span>
                   <span className="truncate text-xs">Admin Dashboard</span>
-                </div>
+                </div> */}
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

@@ -141,6 +141,7 @@ export async function assignLeadCategoryAction(
       await tx.leadAction.create({
         data: {
           inquiryId: id,
+          adminId: admin.id,
           actionType: "CATEGORY_UPDATE",
           outcome: categoryId ? "CATEGORIZED" : "UNCATEGORIZED",
           note: `Category updated by ${admin.name}.`,

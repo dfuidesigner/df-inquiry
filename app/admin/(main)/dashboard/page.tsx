@@ -4,6 +4,7 @@ import {
   leadAccessWhere,
   requireAdminWithPermissions,
 } from "@/lib/admin/permissions"
+import type { Prisma } from "@/generated/prisma/client"
 import {
   DashboardClient,
   type DashboardData,
@@ -30,7 +31,12 @@ function parseMonth(month?: string) {
   const year = Number(yearText)
   const monthIndex = Number(monthText) - 1
 
-  if (!Number.isInteger(year) || !Number.isInteger(monthIndex) || monthIndex < 0 || monthIndex > 11) {
+  if (
+    !Number.isInteger(year) ||
+    !Number.isInteger(monthIndex) ||
+    monthIndex < 0 ||
+    monthIndex > 11
+  ) {
     return parseMonth(fallback)
   }
 
@@ -59,7 +65,12 @@ function incrementMap(map: Map<string, number>, key: string, amount = 1) {
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ month?: string }>
+  searchParams?: Promise<{
+    month?: string
+    status?: string
+    assignedToId?: string
+    categoryId?: string
+  }>
 }) {
   const resolvedSearchParams = await searchParams
   const selectedMonth = parseMonth(resolvedSearchParams?.month)
@@ -68,28 +79,57 @@ export default async function DashboardPage({
     hasPermission(admin, "CREATE_ADMIN") ||
     hasPermission(admin, "EDIT_ADMIN") ||
     hasPermission(admin, "DELETE_ADMIN")
+  const canViewAllLeads = hasPermission(admin, "VIEW_ALL_LEADS")
 
-  const leads = await prisma.inquiry.findMany({
-    where: {
-      ...leadAccessWhere(admin),
-      createdAt: {
-        gte: selectedMonth.start,
-        lt: selectedMonth.end,
-      },
+  const selectedStatus =
+    resolvedSearchParams?.status &&
+    STATUS_ORDER.includes(resolvedSearchParams.status)
+      ? resolvedSearchParams.status
+      : ""
+  const selectedAssignedToId = resolvedSearchParams?.assignedToId?.trim() || ""
+  const selectedCategoryId = resolvedSearchParams?.categoryId?.trim() || ""
+
+  const leadWhere: Prisma.InquiryWhereInput = {
+    ...leadAccessWhere(admin),
+    createdAt: {
+      gte: selectedMonth.start,
+      lt: selectedMonth.end,
     },
-    orderBy: { createdAt: "desc" },
-    select: {
-      id: true,
-      name: true,
-      service: true,
-      status: true,
-      rewardValue: true,
-      createdAt: true,
-      assignedTo: {
-        select: { name: true },
+    ...(selectedStatus ? { status: selectedStatus } : {}),
+    ...(selectedAssignedToId ? { assignedToId: selectedAssignedToId } : {}),
+    ...(selectedCategoryId ? { categoryId: selectedCategoryId } : {}),
+  }
+
+  const [leads, categories, filterAdmins] = await Promise.all([
+    prisma.inquiry.findMany({
+      where: leadWhere,
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        name: true,
+        service: true,
+        status: true,
+        rewardValue: true,
+        createdAt: true,
+        assignedTo: {
+          select: { name: true },
+        },
       },
-    },
-  })
+    }),
+    prisma.leadCategory.findMany({
+      orderBy: { name: "asc" },
+      select: { id: true, name: true },
+    }),
+    // Only admins who can see every lead get a meaningful "filter by admin"
+    // dropdown — restricted admins only ever see their own leads anyway.
+    canViewAllLeads
+      ? prisma.admin.findMany({
+          where: { isActive: true },
+          orderBy: { name: "asc" },
+          select: { id: true, name: true },
+        })
+      : Promise.resolve([{ id: admin.id, name: admin.name }]),
+  ])
 
   const totalAdmins = canManageAdmins ? await prisma.admin.count() : null
   const activeAdmins = canManageAdmins
@@ -162,8 +202,15 @@ export default async function DashboardPage({
       value: lead.rewardValue ?? null,
       createdAt: lead.createdAt.toISOString(),
     })),
+    filters: {
+      statuses: STATUS_ORDER,
+      categories: categories.map((c) => ({ id: c.id, name: c.name })),
+      admins: filterAdmins.map((a) => ({ id: a.id, name: a.name })),
+      selectedStatus,
+      selectedAssignedToId,
+      selectedCategoryId,
+    },
   }
 
   return <DashboardClient data={data} />
 }
-

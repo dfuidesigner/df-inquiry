@@ -5,43 +5,41 @@ import { prisma } from "@/lib/prisma"
 import {
   canViewLead,
   hasPermission,
-  requireAdminWithPermissions,
   leadAccessSelect,
+  requireAdminWithPermissions,
   requirePermission,
   toLeadAccessInput,
 } from "@/lib/admin/permissions"
 import {
   AssignLeadSchema,
   CreateLeadSchema,
+  ImportLeadRowSchema,
   LeadActionSchema,
+  ReassignLeadSchema,
   UpdateLeadSchema,
   UpdateLeadStatusSchema,
   type AssignLeadInput,
   type CreateLeadInput,
+  type ImportLeadRow,
   type LeadActionInput,
+  type ReassignLeadInput,
   type UpdateLeadInput,
   type UpdateLeadStatusInput,
 } from "@/lib/validations/admin-lead"
-import { Prisma } from "@/generated/prisma/client"
 import {
-  ReassignLeadSchema,
-  type ReassignLeadInput,
-} from "@/lib/validations/admin-lead"
-
-import { ImportLeadRowSchema } from "@/lib/validations/admin-lead"
-import { z } from "zod"
-
-export type ImportLeadsResult = {
-  success: boolean
-  message: string
-  created: number
-  skipped: Array<{ row: number; reason: string }>
-  createdCategories: string[]
-}
+  diffLeadFields,
+  resolveFriendlyChangeLabels,
+} from "@/lib/admin/lead-diff"
+import { notifyLeadAssigned } from "@/lib/admin/notifications"
+import { Prisma } from "@/generated/prisma/client"
 
 type ActionResult = {
   success: boolean
   message: string
+}
+
+function normalizeAssignedAdminId(assignedToId?: string | null) {
+  return assignedToId && assignedToId.trim().length > 0 ? assignedToId : null
 }
 
 function normalizeCategoryId(categoryId?: string | null) {
@@ -67,10 +65,6 @@ async function assertLeadAccess(id: string) {
   return { admin, lead }
 }
 
-function normalizeAssignedAdminId(assignedToId?: string | null) {
-  return assignedToId && assignedToId.trim().length > 0 ? assignedToId : null
-}
-
 export async function createLeadAction(
   data: CreateLeadInput
 ): Promise<ActionResult> {
@@ -87,8 +81,8 @@ export async function createLeadAction(
       ? normalizeAssignedAdminId(assignedToId)
       : admin.id
 
-    await prisma.$transaction(async (tx) => {
-      const createdLead = await tx.inquiry.create({
+    const createdLead = await prisma.$transaction(async (tx) => {
+      const created = await tx.inquiry.create({
         data: {
           ...lead,
           rewardValue: rewardValue ? parseFloat(rewardValue) : null,
@@ -99,7 +93,8 @@ export async function createLeadAction(
 
       await tx.leadAction.create({
         data: {
-          inquiryId: createdLead.id,
+          inquiryId: created.id,
+          adminId: admin.id,
           actionType: "LEAD_CREATED",
           outcome: lead.status ?? "NEW",
           note: finalAssignedToId
@@ -107,7 +102,19 @@ export async function createLeadAction(
             : `Lead created by ${admin.name}.`,
         },
       })
+
+      return created
     })
+
+    if (finalAssignedToId) {
+      await notifyLeadAssigned({
+        leadId: createdLead.id,
+        leadName: createdLead.name,
+        assignedToId: finalAssignedToId,
+        assignedById: admin.id,
+        assignedByName: admin.name,
+      })
+    }
 
     revalidatePath("/admin/dashboard")
     revalidatePath("/admin/leads")
@@ -135,9 +142,51 @@ export async function updateLeadAction(
       return { success: false, message: "Invalid lead data." }
     }
 
-    console.log(validated.data)
+    const previousLead = await prisma.inquiry.findUnique({
+      where: { id },
+      select: {
+        name: true,
+        email: true,
+        phone: true,
+        service: true,
+        message: true,
+        status: true,
+        rewardValue: true,
+        source: true,
+        categoryId: true,
+        assignedToId: true,
+      },
+    })
+    if (!previousLead) {
+      return { success: false, message: "Lead not found." }
+    }
 
     const { assignedToId, rewardValue, categoryId, ...lead } = validated.data
+
+    const nextAssignedToId =
+      assignedToId === undefined || !hasPermission(admin, "ASSIGN_LEAD")
+        ? previousLead.assignedToId
+        : normalizeAssignedAdminId(assignedToId)
+    const nextCategoryId =
+      categoryId === undefined
+        ? previousLead.categoryId
+        : normalizeCategoryId(categoryId)
+    const nextRewardValue =
+      rewardValue === undefined
+        ? previousLead.rewardValue
+        : rewardValue
+          ? parseFloat(rewardValue)
+          : null
+
+    const changes = diffLeadFields(previousLead, {
+      ...lead,
+      rewardValue: nextRewardValue,
+      categoryId: nextCategoryId,
+      assignedToId: nextAssignedToId,
+    })
+    if (changes.length > 0) {
+      await resolveFriendlyChangeLabels(changes)
+    }
 
     await prisma.$transaction(async (tx) => {
       await tx.inquiry.update({
@@ -146,25 +195,38 @@ export async function updateLeadAction(
           ...lead,
           ...(rewardValue === undefined
             ? {}
-            : { rewardValue: rewardValue ? parseFloat(rewardValue) : null }),
+            : { rewardValue: nextRewardValue }),
           ...(assignedToId === undefined || !hasPermission(admin, "ASSIGN_LEAD")
             ? {}
-            : { assignedToId: normalizeAssignedAdminId(assignedToId) }),
-          ...(categoryId === undefined
-            ? {}
-            : { categoryId: normalizeCategoryId(categoryId) }),
+            : { assignedToId: nextAssignedToId }),
+          ...(categoryId === undefined ? {} : { categoryId: nextCategoryId }),
         },
       })
 
       await tx.leadAction.create({
         data: {
           inquiryId: id,
+          adminId: admin.id,
           actionType: "LEAD_UPDATED",
           outcome: "UPDATED",
-          note: `Lead details updated by ${admin.name}.`,
+          note:
+            changes.length > 0
+              ? `Lead updated by ${admin.name}: ${changes.map((c) => c.label).join(", ")}.`
+              : `Lead details updated by ${admin.name}.`,
+          metadata: changes.length > 0 ? { changes } : undefined,
         },
       })
     })
+
+    if (nextAssignedToId && nextAssignedToId !== previousLead.assignedToId) {
+      await notifyLeadAssigned({
+        leadId: id,
+        leadName: previousLead.name,
+        assignedToId: nextAssignedToId,
+        assignedById: admin.id,
+        assignedByName: admin.name,
+      })
+    }
 
     revalidatePath("/admin/dashboard")
     revalidatePath("/admin/leads")
@@ -206,6 +268,7 @@ export async function updateLeadStatusAction(
       await tx.leadAction.create({
         data: {
           inquiryId: id,
+          adminId: admin.id,
           actionType: "STATUS_UPDATE",
           outcome: `${currentLead?.status ?? "UNKNOWN"} -> ${validated.data.status}`,
           note:
@@ -259,15 +322,17 @@ export async function assignLeadAction(
       assigneeName = assignee.name
     }
 
-    await prisma.$transaction(async (tx) => {
-      await tx.inquiry.update({
+    const lead = await prisma.$transaction(async (tx) => {
+      const updated = await tx.inquiry.update({
         where: { id },
         data: { assignedToId },
+        select: { id: true, name: true },
       })
 
       await tx.leadAction.create({
         data: {
           inquiryId: id,
+          adminId: admin.id,
           actionType: "ASSIGNMENT",
           outcome: assignedToId ? "ASSIGNED" : "UNASSIGNED",
           note: assignedToId
@@ -275,7 +340,19 @@ export async function assignLeadAction(
             : `Unassigned by ${admin.name}.`,
         },
       })
+
+      return updated
     })
+
+    if (assignedToId) {
+      await notifyLeadAssigned({
+        leadId: id,
+        leadName: lead.name,
+        assignedToId,
+        assignedById: admin.id,
+        assignedByName: admin.name,
+      })
+    }
 
     revalidatePath("/admin/dashboard")
     revalidatePath("/admin/leads")
@@ -286,6 +363,112 @@ export async function assignLeadAction(
       success: false,
       message:
         error instanceof Error ? error.message : "Failed to assign lead.",
+    }
+  }
+}
+
+export async function reassignLeadForRecheckAction(
+  id: string,
+  data: ReassignLeadInput
+): Promise<ActionResult> {
+  try {
+    const admin = await requirePermission("ASSIGN_LEAD")
+    await assertLeadAccess(id)
+
+    const validated = ReassignLeadSchema.safeParse(data)
+    if (!validated.success) {
+      return { success: false, message: "Invalid reassignment data." }
+    }
+
+    const lead = await prisma.inquiry.findUnique({
+      where: { id },
+      select: {
+        name: true,
+        status: true,
+        assignedToId: true,
+        assignedTo: { select: { name: true } },
+      },
+    })
+    if (!lead) return { success: false, message: "Lead not found." }
+
+    const newAssignee = await prisma.admin.findUnique({
+      where: { id: validated.data.assignedToId },
+      select: { id: true, name: true, isActive: true },
+    })
+    if (!newAssignee || !newAssignee.isActive) {
+      return { success: false, message: "Selected admin is not active." }
+    }
+    if (newAssignee.id === lead.assignedToId) {
+      return {
+        success: false,
+        message: "Lead is already assigned to this admin.",
+      }
+    }
+
+    const previousAssigneeName = lead.assignedTo?.name ?? "Unassigned"
+    const previousStatus = lead.status ?? "NEW"
+    const shouldResetStatus = validated.data.resetStatus ?? false
+
+    await prisma.$transaction(async (tx) => {
+      await tx.inquiry.update({
+        where: { id },
+        data: {
+          assignedToId: newAssignee.id,
+          ...(shouldResetStatus ? { status: "FOLLOW_UP" } : {}),
+        },
+      })
+
+      await tx.leadReassignment.create({
+        data: {
+          inquiryId: id,
+          fromAdminId: lead.assignedToId,
+          toAdminId: newAssignee.id,
+          reassignedById: admin.id,
+          previousStatus,
+          note: validated.data.note || null,
+        },
+      })
+
+      await tx.leadAction.create({
+        data: {
+          inquiryId: id,
+          adminId: admin.id,
+          actionType: "ASSIGNMENT",
+          outcome: "REASSIGNED_FOR_RECHECK",
+          note: [
+            `Reassigned by ${admin.name} from ${previousAssigneeName} to ${newAssignee.name} for a second opinion.`,
+            `Previous status was "${previousStatus}".`,
+            shouldResetStatus
+              ? `Status reset to "FOLLOW_UP" for recheck.`
+              : `Status left unchanged.`,
+            validated.data.note ? `Note: ${validated.data.note}` : null,
+          ]
+            .filter(Boolean)
+            .join(" "),
+        },
+      })
+    })
+
+    await notifyLeadAssigned({
+      leadId: id,
+      leadName: lead.name,
+      assignedToId: newAssignee.id,
+      assignedById: admin.id,
+      assignedByName: admin.name,
+    })
+
+    revalidatePath("/admin/dashboard")
+    revalidatePath("/admin/leads")
+    return {
+      success: true,
+      message: `Lead reassigned to ${newAssignee.name}. ${previousAssigneeName} keeps visibility into this lead.`,
+    }
+  } catch (error) {
+    console.error(error)
+    return {
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Failed to reassign lead.",
     }
   }
 }
@@ -306,6 +489,7 @@ export async function addLeadActionLogAction(
     await prisma.leadAction.create({
       data: {
         inquiryId: id,
+        adminId: admin.id,
         actionType: validated.data.actionType,
         outcome: validated.data.outcome,
         note: validated.data.note
@@ -369,100 +553,12 @@ export async function exportLeadsAllowedAction(): Promise<ActionResult> {
   }
 }
 
-export async function reassignLeadForRecheckAction(
-  id: string,
-  data: ReassignLeadInput
-): Promise<ActionResult> {
-  try {
-    const admin = await requirePermission("ASSIGN_LEAD")
-    await assertLeadAccess(id)
-
-    const validated = ReassignLeadSchema.safeParse(data)
-    if (!validated.success) {
-      return { success: false, message: "Invalid reassignment data." }
-    }
-
-    const lead = await prisma.inquiry.findUnique({
-      where: { id },
-      select: {
-        status: true,
-        assignedToId: true,
-        assignedTo: { select: { name: true } },
-      },
-    })
-    if (!lead) return { success: false, message: "Lead not found." }
-
-    const newAssignee = await prisma.admin.findUnique({
-      where: { id: validated.data.assignedToId },
-      select: { id: true, name: true, isActive: true },
-    })
-    if (!newAssignee || !newAssignee.isActive) {
-      return { success: false, message: "Selected admin is not active." }
-    }
-    if (newAssignee.id === lead.assignedToId) {
-      return {
-        success: false,
-        message: "Lead is already assigned to this admin.",
-      }
-    }
-
-    const previousAssigneeName = lead.assignedTo?.name ?? "Unassigned"
-    const previousStatus = lead.status ?? "NEW"
-    const shouldResetStatus = validated.data.resetStatus ?? false
-
-    await prisma.$transaction(async (tx) => {
-      await tx.inquiry.update({
-        where: { id },
-        data: {
-          assignedToId: newAssignee.id,
-          ...(shouldResetStatus ? { status: "FOLLOW_UP" } : {}),
-        },
-      })
-
-      await tx.leadReassignment.create({
-        data: {
-          inquiryId: id,
-          fromAdminId: lead.assignedToId,
-          toAdminId: newAssignee.id,
-          reassignedById: admin.id,
-          previousStatus,
-          note: validated.data.note || null,
-        },
-      })
-
-      await tx.leadAction.create({
-        data: {
-          inquiryId: id,
-          actionType: "ASSIGNMENT",
-          outcome: "REASSIGNED_FOR_RECHECK",
-          note: [
-            `Reassigned by ${admin.name} from ${previousAssigneeName} to ${newAssignee.name} for a second opinion.`,
-            `Previous status was "${previousStatus}".`,
-            shouldResetStatus
-              ? `Status reset to "FOLLOW_UP" for recheck.`
-              : `Status left unchanged.`,
-            validated.data.note ? `Note: ${validated.data.note}` : null,
-          ]
-            .filter(Boolean)
-            .join(" "),
-        },
-      })
-    })
-
-    revalidatePath("/admin/dashboard")
-    revalidatePath("/admin/leads")
-    return {
-      success: true,
-      message: `Lead reassigned to ${newAssignee.name}. ${previousAssigneeName} keeps visibility into this lead.`,
-    }
-  } catch (error) {
-    console.error(error)
-    return {
-      success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to reassign lead.",
-    }
-  }
+export type ImportLeadsResult = {
+  success: boolean
+  message: string
+  created: number
+  skipped: Array<{ row: number; reason: string }>
+  createdCategories: string[]
 }
 
 export async function importLeadsAction(
@@ -520,28 +616,18 @@ export async function importLeadsAction(
 
     const skipped: Array<{ row: number; reason: string }> = []
     const validRows: Array<{
-      data: z.infer<typeof ImportLeadRowSchema>
+      data: ImportLeadRow
       categoryId: string | null
       assignedToId: string | null
     }> = []
 
     for (let i = 0; i < rows.length; i++) {
       const parsed = ImportLeadRowSchema.safeParse(rows[i])
-      // if (!parsed.success) {
-      //   skipped.push({
-      //     row: i + 2,
-      //     reason: parsed.error.issues[0]?.message ?? "Invalid row data.",
-      //   })
-      //   continue
-      // }
       if (!parsed.success) {
         skipped.push({
           row: i + 2,
           reason: parsed.error.issues
-            .map(
-              (issue) =>
-                `${issue.path.join(".")}: ${issue.message} (received ${JSON.stringify(issue.input)})`
-            )
+            .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
             .join(", "),
         })
         continue
@@ -570,6 +656,12 @@ export async function importLeadsAction(
     }
 
     let created = 0
+    const notifyTargets: Array<{
+      leadId: string
+      leadName: string
+      assignedToId: string
+    }> = []
+
     await prisma.$transaction(async (tx) => {
       for (const row of validRows) {
         const lead = await tx.inquiry.create({
@@ -593,9 +685,11 @@ export async function importLeadsAction(
             assignedToId: row.assignedToId,
           },
         })
+
         await tx.leadAction.create({
           data: {
             inquiryId: lead.id,
+            adminId: admin.id,
             actionType: "LEAD_CREATED",
             outcome: row.data.status || "NEW",
             note: row.data.comment
@@ -603,9 +697,28 @@ export async function importLeadsAction(
               : `Imported by ${admin.name}.`,
           },
         })
+
+        if (row.assignedToId && row.assignedToId !== admin.id) {
+          notifyTargets.push({
+            leadId: lead.id,
+            leadName: lead.name,
+            assignedToId: row.assignedToId,
+          })
+        }
+
         created++
       }
     })
+
+    for (const target of notifyTargets) {
+      await notifyLeadAssigned({
+        leadId: target.leadId,
+        leadName: target.leadName,
+        assignedToId: target.assignedToId,
+        assignedById: admin.id,
+        assignedByName: admin.name,
+      })
+    }
 
     revalidatePath("/admin/dashboard")
     revalidatePath("/admin/leads")
