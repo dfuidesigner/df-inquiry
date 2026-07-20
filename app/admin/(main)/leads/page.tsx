@@ -60,17 +60,21 @@ export default async function LeadsPage() {
     phoneGroups.set(phoneKey, [...(phoneGroups.get(phoneKey) ?? []), lead.id])
   }
 
-  function duplicateCountFor(lead: {
-    id: string
-    email: string
-    phone: string
-  }) {
-    const matches = new Set([
-      ...(emailGroups.get(lead.email.trim().toLowerCase()) ?? []),
-      ...(phoneGroups.get(lead.phone.trim()) ?? []),
-    ])
-    matches.delete(lead.id)
-    return matches.size
+  // function duplicateCountFor(lead: {
+  //   id: string
+  //   email: string
+  //   phone: string
+  // }) {
+  //   const matches = new Set([
+  //     ...(emailGroups.get(lead.email.trim().toLowerCase()) ?? []),
+  //     ...(phoneGroups.get(lead.phone.trim()) ?? []),
+  //   ])
+  //   matches.delete(lead.id)
+  //   return matches.size
+  // }
+  function duplicateCountFor(lead: { id: string; phone: string }) {
+    const matches = phoneGroups.get(lead.phone.trim()) ?? []
+    return matches.filter((id) => id !== lead.id).length
   }
 
   const admins = hasPermission(admin, "ASSIGN_LEAD")
