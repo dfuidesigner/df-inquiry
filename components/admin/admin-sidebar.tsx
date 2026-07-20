@@ -6,6 +6,7 @@ import {
   BriefcaseBusiness,
   // ClipboardCheck,
   ClipboardList,
+  Building2,
   History,
   LayoutDashboard,
   ListTodo,
@@ -66,6 +67,12 @@ const adminNavigation: Array<{ label: string; items: NavigationItem[] }> = [
         title: "Tasks",
         url: "/admin/tasks",
         icon: ListTodo,
+      },
+      {
+        title: "Prospects",
+        url: "/admin/prospects",
+        icon: Building2,
+        permissions: ["VIEW_PROSPECTS", "MANAGE_PROSPECTS"],
       },
       {
         title: "Activity Log",

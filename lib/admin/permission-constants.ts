@@ -8,14 +8,15 @@ export const ALL_PERMISSIONS: PermissionKey[] = [
   "DELETE_LEAD",
   "ASSIGN_LEAD",
   "MANAGE_LEAD_CATEGORIES",
-  "VIEW_ACTIVITY_LOG", // NEW
+  "VIEW_ACTIVITY_LOG",
+  "VIEW_PROSPECTS",
+  "MANAGE_PROSPECTS",
   "CREATE_ADMIN",
   "EDIT_ADMIN",
   "DELETE_ADMIN",
   "VIEW_REPORTS",
   "EXPORT_LEADS",
 ]
-
 export const PERMISSION_LABELS: Record<PermissionKey, string> = {
   VIEW_ALL_LEADS: "View all leads",
   VIEW_ASSIGNED_LEADS: "View assigned leads",
@@ -25,9 +26,11 @@ export const PERMISSION_LABELS: Record<PermissionKey, string> = {
   ASSIGN_LEAD: "Assign leads",
   CREATE_ADMIN: "Create admins",
   MANAGE_LEAD_CATEGORIES: "Manage lead categories",
-  VIEW_ACTIVITY_LOG: "View activity log",   // NEW
+  VIEW_ACTIVITY_LOG: "View activity log",
   EDIT_ADMIN: "Edit admins",
   DELETE_ADMIN: "Delete admins",
   VIEW_REPORTS: "View reports",
   EXPORT_LEADS: "Export leads",
+  VIEW_PROSPECTS: "View industry prospects",
+  MANAGE_PROSPECTS: "Manage prospects (import/convert/delete)",
 }

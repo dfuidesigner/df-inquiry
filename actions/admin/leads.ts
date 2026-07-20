@@ -8,6 +8,7 @@ import {
   leadAccessSelect,
   requireAdminWithPermissions,
   requirePermission,
+  leadAccessWhere,
   toLeadAccessInput,
 } from "@/lib/admin/permissions"
 import {
@@ -739,6 +740,52 @@ export async function importLeadsAction(
       created: 0,
       skipped: [],
       createdCategories: [],
+    }
+  }
+}
+
+export async function deleteManyLeadsAction(
+  ids: string[]
+): Promise<ActionResult & { deletedCount: number }> {
+  try {
+    const admin = await requirePermission("DELETE_LEAD")
+
+    if (ids.length === 0) {
+      return { success: false, message: "No leads selected.", deletedCount: 0 }
+    }
+
+    // leadAccessWhere ensures a restricted admin can't mass-delete leads
+    // outside their own visibility even if the client sent extra IDs.
+    const result = await prisma.inquiry.deleteMany({
+      where: {
+        id: { in: ids },
+        ...leadAccessWhere(admin),
+      },
+    })
+
+    revalidatePath("/admin/dashboard")
+    revalidatePath("/admin/leads")
+
+    if (result.count === 0) {
+      return {
+        success: false,
+        message: "None of the selected leads could be deleted.",
+        deletedCount: 0,
+      }
+    }
+
+    return {
+      success: true,
+      message: `Deleted ${result.count} lead${result.count === 1 ? "" : "s"}.`,
+      deletedCount: result.count,
+    }
+  } catch (error) {
+    console.error(error)
+    return {
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Failed to delete leads.",
+      deletedCount: 0,
     }
   }
 }

@@ -2,12 +2,12 @@
 
 import { useRouter } from "next/navigation"
 import {
+  Activity,
   ArrowUpRight,
   BadgeDollarSign,
   CalendarDays,
   CheckCircle2,
   ClipboardList,
-  // Filter,
   LineChart,
   ShieldCheck,
   Target,
@@ -32,16 +32,34 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 
 export type ChartPoint = {
   label: string
   value: number
 }
 
+export type TeamActivityRow = {
+  adminId: string
+  adminName: string
+  actionsCount: number
+  leadsHandled: number
+  assignmentsCount: number
+}
+
 export type DashboardData = {
   role: string
   selectedMonth: string
-  selectedMonthLabel: string
+  selectedRangeLabel: string
+  trendGranularity: "hour" | "day"
+  isTeamWideActivity: boolean
   stats: {
     totalLeads: number
     openLeads: number
@@ -52,9 +70,10 @@ export type DashboardData = {
     activeAdmins: number | null
   }
   statusDistribution: ChartPoint[]
-  monthlyTrend: ChartPoint[]
+  trend: ChartPoint[]
   topServices: ChartPoint[]
   adminPerformance: ChartPoint[]
+  teamActivity: TeamActivityRow[]
   latestLeads: Array<{
     id: string
     name: string
@@ -64,6 +83,7 @@ export type DashboardData = {
     createdAt: string
   }>
   filters: {
+    range: string
     statuses: string[]
     categories: Array<{ id: string; name: string }>
     admins: Array<{ id: string; name: string }>
@@ -76,6 +96,14 @@ export type DashboardData = {
 type DashboardClientProps = {
   data: DashboardData
 }
+
+const RANGE_PRESETS = [
+  { value: "today", label: "Today" },
+  { value: "yesterday", label: "Yesterday" },
+  { value: "7d", label: "Last 7 Days" },
+  { value: "30d", label: "Last 30 Days" },
+  { value: "month", label: "Custom Month" },
+]
 
 const statusTones: Record<string, string> = {
   NEW: "bg-sky-500",
@@ -122,6 +150,7 @@ function StatCard({
     </Card>
   )
 }
+
 const chartColors = [
   "bg-blue-500",
   "bg-emerald-500",
@@ -133,6 +162,7 @@ const chartColors = [
   "bg-indigo-500",
   "bg-teal-500",
 ]
+
 function BarList({
   points,
   colors = false,
@@ -169,24 +199,29 @@ function BarList({
   )
 }
 
-function MonthTrendBars({ points }: { points: ChartPoint[] }) {
+function TrendBars({ points }: { points: ChartPoint[] }) {
   const max = maxValue(points)
+  // Show every label if there aren't many buckets (hourly view), otherwise
+  // thin them out so a 30-day view doesn't cram 30 overlapping labels.
+  const labelInterval = points.length <= 12 ? 1 : Math.ceil(points.length / 8)
 
   return (
-    <div className="flex h-full min-h-[14rem] items-end gap-1 rounded-lg border bg-muted/20 p-4">
-      {points.map((point) => {
-        const day = Number(point.label)
-        const showLabel = day === 1 || day % 5 === 0 || day === points.length
+    <div className="flex h-full min-h-56 items-end gap-1 rounded-lg border bg-muted/20 p-4">
+      {points.map((point, index) => {
+        const showLabel =
+          index === 0 ||
+          index === points.length - 1 ||
+          index % labelInterval === 0
 
         return (
           <div
-            key={point.label}
+            key={`${point.label}-${index}`}
             className="flex h-full min-w-2 flex-1 flex-col justify-end gap-2"
           >
             <div
               className="min-h-1 rounded-t-sm bg-blue-900 transition-all"
               style={{ height: `${Math.max(4, (point.value / max) * 100)}%` }}
-              title={`${point.value} leads on day ${point.label}`}
+              title={`${point.value} leads — ${point.label}`}
             />
             <div className="h-4 text-center text-[10px] text-muted-foreground">
               {showLabel ? point.label : ""}
@@ -202,29 +237,39 @@ export function DashboardClient({ data }: DashboardClientProps) {
   const router = useRouter()
   const { filters } = data
 
-  function buildQuery(overrides: Record<string, string>) {
-    const params = new URLSearchParams()
-    params.set("month", data.selectedMonth)
-    if (filters.selectedStatus) params.set("status", filters.selectedStatus)
-    if (filters.selectedAssignedToId)
-      params.set("assignedToId", filters.selectedAssignedToId)
-    if (filters.selectedCategoryId)
-      params.set("categoryId", filters.selectedCategoryId)
+  function buildQuery(
+    overrides: Partial<{
+      range: string
+      month: string
+      status: string
+      assignedToId: string
+      categoryId: string
+    }>
+  ) {
+    const nextRange = overrides.range ?? filters.range
+    const nextMonth = overrides.month ?? data.selectedMonth
+    const nextStatus = overrides.status ?? filters.selectedStatus
+    const nextAssignedToId =
+      overrides.assignedToId ?? filters.selectedAssignedToId
+    const nextCategoryId = overrides.categoryId ?? filters.selectedCategoryId
 
-    for (const [key, value] of Object.entries(overrides)) {
-      if (value) {
-        params.set(key, value)
-      } else {
-        params.delete(key)
-      }
-    }
+    const params = new URLSearchParams()
+    params.set("range", nextRange)
+    if (nextRange === "month" && nextMonth) params.set("month", nextMonth)
+    if (nextStatus) params.set("status", nextStatus)
+    if (nextAssignedToId) params.set("assignedToId", nextAssignedToId)
+    if (nextCategoryId) params.set("categoryId", nextCategoryId)
 
     return `/admin/dashboard?${params.toString()}`
   }
 
+  function handleRangeChange(range: string) {
+    router.push(buildQuery({ range }))
+  }
+
   function handleMonthChange(month: string) {
     if (!month) return
-    router.push(buildQuery({ month }))
+    router.push(buildQuery({ range: "month", month }))
   }
 
   function handleStatusChange(status: string) {
@@ -244,17 +289,19 @@ export function DashboardClient({ data }: DashboardClientProps) {
   }
 
   function resetToCurrentMonth() {
-    router.push("/admin/dashboard")
+    router.push("/admin/dashboard?range=month")
   }
 
   function clearFilters() {
-    router.push(`/admin/dashboard?month=${data.selectedMonth}`)
+    router.push(buildQuery({ status: "", assignedToId: "", categoryId: "" }))
   }
 
   const hasActiveFilters =
     !!filters.selectedStatus ||
     !!filters.selectedAssignedToId ||
     !!filters.selectedCategoryId
+
+  const trendHeading = data.trendGranularity === "hour" ? "Hourly" : "Daily"
 
   return (
     <div className="flex flex-col space-y-6 pb-8">
@@ -269,7 +316,7 @@ export function DashboardClient({ data }: DashboardClientProps) {
               </Badge>
               <Badge className="gap-1" variant="secondary">
                 <CalendarDays className="h-3 w-3" />
-                {data.selectedMonthLabel}
+                {data.selectedRangeLabel}
               </Badge>
             </div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground">
@@ -277,34 +324,44 @@ export function DashboardClient({ data }: DashboardClientProps) {
             </h1>
             <p className="text-sm text-muted-foreground">
               Lead pipeline, conversion, team load, and service demand for the
-              selected month.
+              selected period.
             </p>
           </div>
+        </div>
 
-          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-end">
-            <div className="space-y-1.5">
-              <Label
-                htmlFor="dashboard-month"
-                className="text-xs text-muted-foreground"
-              >
-                Month
-              </Label>
+        {/* Date range presets — always visible, no click required to reveal */}
+        <div className="flex flex-wrap items-center gap-2">
+          {RANGE_PRESETS.map((preset) => (
+            <Button
+              key={preset.value}
+              type="button"
+              size="sm"
+              variant={filters.range === preset.value ? "default" : "outline"}
+              onClick={() => handleRangeChange(preset.value)}
+            >
+              {preset.label}
+            </Button>
+          ))}
+
+          {filters.range === "month" && (
+            <div className="ml-2 flex items-center gap-2">
               <Input
                 id="dashboard-month"
                 type="month"
                 value={data.selectedMonth}
                 onChange={(event) => handleMonthChange(event.target.value)}
-                className="w-full sm:w-44"
+                className="h-9 w-40"
               />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={resetToCurrentMonth}
+              >
+                Current Month
+              </Button>
             </div>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={resetToCurrentMonth}
-            >
-              Current Month
-            </Button>
-          </div>
+          )}
         </div>
 
         <div className="flex flex-wrap items-end gap-3 rounded-lg border bg-muted/20 p-3">
@@ -415,20 +472,18 @@ export function DashboardClient({ data }: DashboardClientProps) {
       </div>
 
       <div className="grid gap-6 px-4 lg:px-8 xl:grid-cols-[1.35fr_0.9fr]">
-        {/* FIXED: Added flex flex-col to force the card to expand uniformly */}
         <Card className="flex flex-col">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <LineChart className="h-5 w-5" />
-              Monthly Lead Trend
+              {trendHeading} Lead Trend
             </CardTitle>
             <CardDescription>
-              Daily lead creation for {data.selectedMonthLabel}.
+              {trendHeading} lead creation for {data.selectedRangeLabel}.
             </CardDescription>
           </CardHeader>
-          {/* FIXED: Added flex-1 to CardContent so the chart space expands */}
           <CardContent className="flex-1">
-            <MonthTrendBars points={data.monthlyTrend} />
+            <TrendBars points={data.trend} />
           </CardContent>
         </Card>
 
@@ -439,7 +494,7 @@ export function DashboardClient({ data }: DashboardClientProps) {
               Status Mix
             </CardTitle>
             <CardDescription>
-              Lead statuses for {data.selectedMonthLabel}.
+              Lead statuses for {data.selectedRangeLabel}.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -453,7 +508,7 @@ export function DashboardClient({ data }: DashboardClientProps) {
           <CardHeader>
             <CardTitle>Top Services</CardTitle>
             <CardDescription>
-              Most requested services this month.
+              Most requested services for {data.selectedRangeLabel}.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -468,7 +523,7 @@ export function DashboardClient({ data }: DashboardClientProps) {
               Assigned Load
             </CardTitle>
             <CardDescription>
-              Lead count by assigned admin this month.
+              Lead count by assigned admin for {data.selectedRangeLabel}.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -479,12 +534,14 @@ export function DashboardClient({ data }: DashboardClientProps) {
         <Card>
           <CardHeader>
             <CardTitle>Latest Leads</CardTitle>
-            <CardDescription>Newest visible leads this month.</CardDescription>
+            <CardDescription>
+              Newest visible leads in this period.
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {data.latestLeads.length === 0 ? (
               <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-                No leads for this month.
+                No leads for this period.
               </div>
             ) : (
               data.latestLeads.map((lead) => (
@@ -503,6 +560,59 @@ export function DashboardClient({ data }: DashboardClientProps) {
                   </Badge>
                 </div>
               ))
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="px-4 lg:px-8">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="h-5 w-5" />
+              {data.isTeamWideActivity ? "Team Activity" : "Your Activity"}
+            </CardTitle>
+            <CardDescription>
+              Actions logged, leads touched, and assignments made for{" "}
+              {data.selectedRangeLabel}.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {data.teamActivity.length === 0 ? (
+              <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+                No activity logged for this period.
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Admin</TableHead>
+                    <TableHead className="text-right">Actions Taken</TableHead>
+                    <TableHead className="text-right">Leads Handled</TableHead>
+                    <TableHead className="text-right">
+                      Assignments Made
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {data.teamActivity.map((row) => (
+                    <TableRow key={row.adminId}>
+                      <TableCell className="font-medium">
+                        {row.adminName}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {row.actionsCount}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {row.leadsHandled}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {row.assignmentsCount}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             )}
           </CardContent>
         </Card>

@@ -23,6 +23,9 @@ import { LeadCategoryDialog } from "./lead-category-dialog"
 import { LeadImportDialog } from "./lead-import-dialog"
 import { assignLeadCategoryAction } from "@/actions/admin/lead-categories"
 
+import { deleteManyLeadsAction } from "@/actions/admin/leads"
+import { ConfirmDialog } from "@/components/confirm-dialog"
+
 export type LeadCategoryOption = {
   id: string
   name: string
@@ -61,6 +64,8 @@ export type LeadRowData = {
   lastReassignedAt: string
   lastNote: string
   recentActions: LeadActionRow[]
+  duplicateCount: number
+  duplicateStatus: "Duplicate" | "Unique"   
 }
 
 export type AdminOption = {
@@ -98,6 +103,11 @@ export function LeadsClient({
   const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false)
   const [isImportOpen, setIsImportOpen] = useState(false)
 
+  const [bulkDeleteState, setBulkDeleteState] = useState<{
+    ids: string[]
+    clearSelection: () => void
+  } | null>(null)
+
   function handleCategoryChange(lead: LeadRowData, categoryId: string) {
     startTransition(async () => {
       const res = await assignLeadCategoryAction(lead.id, categoryId || null)
@@ -133,6 +143,23 @@ export function LeadsClient({
       }
 
       toast.success(res.message)
+      router.refresh()
+    })
+  }
+
+  function confirmBulkDelete() {
+    if (!bulkDeleteState) return
+
+    startTransition(async () => {
+      const res = await deleteManyLeadsAction(bulkDeleteState.ids)
+      if (!res.success) {
+        toast.error(res.message)
+        return
+      }
+
+      toast.success(res.message)
+      bulkDeleteState.clearSelection()
+      setBulkDeleteState(null)
       router.refresh()
     })
   }
@@ -229,6 +256,9 @@ export function LeadsClient({
           onReassign={setReassignLead}
           onCategoryChange={handleCategoryChange}
           categories={categories}
+          onBulkDeleteRequest={(ids, clearSelection) =>
+            setBulkDeleteState({ ids, clearSelection })
+          }
         />
       </div>
 
@@ -276,6 +306,15 @@ export function LeadsClient({
         open={isCategoryManagerOpen}
         onOpenChange={setIsCategoryManagerOpen}
         categories={categories}
+      />
+      <ConfirmDialog
+        open={!!bulkDeleteState}
+        onOpenChange={(open) => !open && setBulkDeleteState(null)}
+        title="Delete selected leads"
+        description={`This will permanently delete ${bulkDeleteState?.ids.length ?? 0} lead(s), including all of their notes and history. This cannot be undone.`}
+        confirmLabel="Delete All"
+        isPending={isPending}
+        onConfirm={confirmBulkDelete}
       />
 
       <LeadImportDialog open={isImportOpen} onOpenChange={setIsImportOpen} />

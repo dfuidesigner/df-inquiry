@@ -49,6 +49,30 @@ export default async function LeadsPage() {
     prisma.leadCategory.findMany({ orderBy: { name: "asc" } }),
   ])
 
+  const emailGroups = new Map<string, string[]>()
+  const phoneGroups = new Map<string, string[]>()
+
+  for (const lead of rawLeads) {
+    const emailKey = lead.email.trim().toLowerCase()
+    const phoneKey = lead.phone.trim()
+
+    emailGroups.set(emailKey, [...(emailGroups.get(emailKey) ?? []), lead.id])
+    phoneGroups.set(phoneKey, [...(phoneGroups.get(phoneKey) ?? []), lead.id])
+  }
+
+  function duplicateCountFor(lead: {
+    id: string
+    email: string
+    phone: string
+  }) {
+    const matches = new Set([
+      ...(emailGroups.get(lead.email.trim().toLowerCase()) ?? []),
+      ...(phoneGroups.get(lead.phone.trim()) ?? []),
+    ])
+    matches.delete(lead.id)
+    return matches.size
+  }
+
   const admins = hasPermission(admin, "ASSIGN_LEAD")
     ? await prisma.admin.findMany({
         where: { isActive: true },
@@ -60,7 +84,7 @@ export default async function LeadsPage() {
   const leads: LeadRowData[] = rawLeads.map((lead) => {
     const reassignmentCount = lead._count.reassignments
     const latestReassignment = lead.reassignments[0]
-
+    const duplicateCount = duplicateCountFor(lead)
     return {
       id: lead.id,
       name: lead.name,
@@ -89,6 +113,8 @@ export default async function LeadsPage() {
       lastReassignedToName: latestReassignment?.toAdmin?.name ?? "",
       lastReassignedAt: latestReassignment?.createdAt.toISOString() ?? "",
       lastNote: lead.actions[0]?.note ?? "",
+      duplicateCount,
+      duplicateStatus: duplicateCount > 0 ? "Duplicate" : "Unique",
       recentActions: lead.actions.map((action) => ({
         id: action.id,
         actionType: action.actionType,

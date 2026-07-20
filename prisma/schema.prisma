@@ -23,7 +23,8 @@ enum PermissionKey {
   MANAGE_LEAD_CATEGORIES
   VIEW_ACTIVITY_LOG
   ASSIGN_LEAD
-
+  VIEW_PROSPECTS
+  MANAGE_PROSPECTS
   CREATE_ADMIN
   EDIT_ADMIN
   DELETE_ADMIN
@@ -54,6 +55,9 @@ model Admin {
 
   leadActionsLogged LeadAction[]   @relation("LeadActionAdmin")
   notifications     Notification[] @relation("AdminNotifications")
+
+  prospectsConverted Prospect[] @relation("ProspectConvertedBy")
+  prospectsImported  Prospect[] @relation("ProspectImportedBy")
 
   @@map("admins")
 }
@@ -121,6 +125,8 @@ model Inquiry {
 
   reassignments LeadReassignment[]
   notifications Notification[]
+
+  convertedFromProspect Prospect?
 
   @@index([assignedToId])
   @@index([status])
@@ -284,4 +290,48 @@ model LeadReassignment {
   @@index([fromAdminId])
   @@index([toAdminId])
   @@map("lead_reassignments")
+}
+
+model ProspectCategory {
+  id    String  @id @default(cuid())
+  name  String  @unique
+  color String? @default("#64748b")
+
+  prospects Prospect[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("prospect_categories")
+}
+
+model Prospect {
+  id String @id @default(cuid())
+
+  name  String
+  email String
+  phone String
+
+  categoryId String?
+  category   ProspectCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  note   String? @db.Text
+  source String? @default("Import")
+
+  convertedLeadId String?   @unique
+  convertedLead   Inquiry?  @relation(fields: [convertedLeadId], references: [id], onDelete: SetNull)
+  convertedAt     DateTime?
+  convertedById   String?
+  convertedBy     Admin?    @relation("ProspectConvertedBy", fields: [convertedById], references: [id], onDelete: SetNull)
+
+  importedById String?
+  importedBy   Admin?  @relation("ProspectImportedBy", fields: [importedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([categoryId])
+  @@index([convertedLeadId])
+  @@index([createdAt])
+  @@map("prospects")
 }

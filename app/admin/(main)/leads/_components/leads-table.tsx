@@ -67,6 +67,7 @@ type LeadsTableProps = {
   onReassign: (lead: LeadRowData) => void
   categories: LeadCategoryOption[]
   onCategoryChange: (lead: LeadRowData, categoryId: string) => void
+  onBulkDeleteRequest: (ids: string[], clearSelection: () => void) => void
 }
 
 const statusClassName: Record<string, string> = {
@@ -93,8 +94,17 @@ export function LeadsTable({
   onReassign,
   categories,
   onCategoryChange,
+  onBulkDeleteRequest,
 }: LeadsTableProps) {
   const filters: FilterConfig[] = [
+    {
+      columnId: "duplicateStatus",
+      label: "Duplicates",
+      options: [
+        { label: "Duplicates only", value: "Duplicate" },
+        { label: "Unique leads", value: "Unique" },
+      ],
+    },
     {
       columnId: "status",
       label: "Status",
@@ -137,9 +147,28 @@ export function LeadsTable({
       header: "Lead",
       cell: ({ row }) => (
         <div className="flex min-w-52 flex-col gap-0.5">
-          <span className="font-semibold text-foreground">
-            {row.original.name}
-          </span>
+          <div className="flex items-center gap-1.5">
+            <span className="font-semibold text-foreground">
+              {row.original.name}
+            </span>
+            {row.original.duplicateCount > 0 && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge
+                    variant="destructive"
+                    className="h-5 px-1.5 text-[10px]"
+                  >
+                    ×{row.original.duplicateCount + 1}
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent>
+                  This email or phone number appears on{" "}
+                  {row.original.duplicateCount} other lead
+                  {row.original.duplicateCount === 1 ? "" : "s"}.
+                </TooltipContent>
+              </Tooltip>
+            )}
+          </div>
           <span className="text-xs text-muted-foreground">
             {row.original.email}
           </span>
@@ -157,6 +186,16 @@ export function LeadsTable({
           {row.original.service}
         </div>
       ),
+    },
+    {
+      accessorKey: "updatedAt",
+      header: "Last Updated",
+      cell: ({ row }) => formatDate(row.original.updatedAt),
+    },
+    {
+      accessorKey: "duplicateStatus",
+      header: "Duplicates",
+      cell: ({ row }) => row.original.duplicateStatus,
     },
     {
       accessorKey: "status",
@@ -417,6 +456,34 @@ export function LeadsTable({
         exportFileName="leads.csv"
         emptyStateMessage="No leads found"
         emptyStateDescription="Create a lead or adjust the current filters."
+        bulkActions={
+          permissions.canDelete
+            ? (selectedRows, clearSelection) => (
+                <>
+                  <span className="text-sm font-medium">
+                    {selectedRows.length} lead(s) selected
+                  </span>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="gap-2"
+                    onClick={() =>
+                      onBulkDeleteRequest(
+                        selectedRows.map((row) => row.id),
+                        clearSelection
+                      )
+                    }
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Delete Selected
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={clearSelection}>
+                    Clear selection
+                  </Button>
+                </>
+              )
+            : undefined
+        }
       />
     </div>
   )

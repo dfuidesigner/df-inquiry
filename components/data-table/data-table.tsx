@@ -64,6 +64,10 @@ export interface DataTableConfig<TData> {
   initialSorting?: SortingState
   emptyStateMessage?: string
   emptyStateDescription?: string
+  bulkActions?: (
+    selectedRows: TData[],
+    clearSelection: () => void
+  ) => React.ReactNode // NEW
 }
 
 export function ReusableDataTable<TData extends Record<string, unknown>>({
@@ -82,6 +86,7 @@ export function ReusableDataTable<TData extends Record<string, unknown>>({
   initialSorting = [],
   emptyStateMessage = "No results found",
   emptyStateDescription = "Try adjusting your search or filters",
+  bulkActions,
 }: DataTableConfig<TData>) {
   const [sorting, setSorting] = useState<SortingState>(initialSorting)
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
@@ -359,6 +364,19 @@ export function ReusableDataTable<TData extends Record<string, unknown>>({
           table.getFilteredSelectedRowModel().rows.length > 0 && (
             <div className="text-sm font-medium text-primary">
               {table.getFilteredSelectedRowModel().rows.length} selected
+            </div>
+          )}
+
+        {enableRowSelection &&
+          bulkActions &&
+          table.getFilteredSelectedRowModel().rows.length > 0 && (
+            <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-primary/5 px-4 py-3">
+              {bulkActions(
+                table
+                  .getFilteredSelectedRowModel()
+                  .rows.map((row) => row.original),
+                () => table.resetRowSelection()
+              )}
             </div>
           )}
       </div>
