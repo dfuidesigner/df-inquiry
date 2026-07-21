@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useEffect, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { ArrowRightCircle, Loader2 } from "lucide-react"
@@ -33,6 +33,7 @@ type ConvertToLeadDialogProps = {
   prospect: ProspectRowData | null
   admins: AdminOption[]
   canAssign: boolean
+  currentAdminId: string
   open: boolean
   onOpenChange: (open: boolean) => void
 }
@@ -41,6 +42,7 @@ export function ConvertToLeadDialog({
   prospect,
   admins,
   canAssign,
+  currentAdminId,
   open,
   onOpenChange,
 }: ConvertToLeadDialogProps) {
@@ -48,9 +50,19 @@ export function ConvertToLeadDialog({
   const [isPending, startTransition] = useTransition()
   const [service, setService] = useState("")
   const [status, setStatus] = useState<LeadStatus>("NEW")
-  const [assignedToId, setAssignedToId] = useState("")
+  const [assignedToId, setAssignedToId] = useState(currentAdminId)
   const [rewardValue, setRewardValue] = useState("")
   const [message, setMessage] = useState("")
+
+  useEffect(() => {
+    if (open) {
+      setService("")
+      setStatus("NEW")
+      setAssignedToId(currentAdminId)
+      setRewardValue("")
+      setMessage("")
+    }
+  }, [open, currentAdminId])
 
   function resetForm() {
     setService("")
@@ -59,7 +71,6 @@ export function ConvertToLeadDialog({
     setRewardValue("")
     setMessage("")
   }
-
   function onSubmit() {
     if (!prospect || service.trim().length < 2) return
 
@@ -78,7 +89,6 @@ export function ConvertToLeadDialog({
       }
 
       toast.success(res.message)
-      resetForm()
       onOpenChange(false)
       router.refresh()
     })
@@ -141,21 +151,15 @@ export function ConvertToLeadDialog({
 
             {canAssign && (
               <div className="space-y-2">
-                <Label>Assign to</Label>
-                <Select
-                  value={assignedToId || "unassigned"}
-                  onValueChange={(v) =>
-                    setAssignedToId(v === "unassigned" ? "" : v)
-                  }
-                >
+                <Label>Assigned to</Label>
+                <Select value={assignedToId} onValueChange={setAssignedToId}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="unassigned">Unassigned</SelectItem>
                     {admins.map((a) => (
                       <SelectItem key={a.id} value={a.id}>
-                        {a.name}
+                        {a.id === currentAdminId ? `${a.name} (you)` : a.name}
                       </SelectItem>
                     ))}
                   </SelectContent>

@@ -81,7 +81,8 @@ model LeadCategory {
   name  String  @unique
   color String? @default("#64748b")
 
-  leads Inquiry[]
+  leads     Inquiry[]
+  prospects Prospect[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -292,18 +293,18 @@ model LeadReassignment {
   @@map("lead_reassignments")
 }
 
-model ProspectCategory {
-  id    String  @id @default(cuid())
-  name  String  @unique
-  color String? @default("#64748b")
+// model ProspectCategory {
+//   id    String  @id @default(cuid())
+//   name  String  @unique
+//   color String? @default("#64748b")
 
-  prospects Prospect[]
+//   prospects Prospect[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime @updatedAt
 
-  @@map("prospect_categories")
-}
+//   @@map("prospect_categories")
+// }
 
 model Prospect {
   id String @id @default(cuid())
@@ -313,7 +314,7 @@ model Prospect {
   phone String
 
   categoryId String?
-  category   ProspectCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  category   LeadCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull) // CHANGED from ProspectCategory
 
   note   String? @db.Text
   source String? @default("Import")

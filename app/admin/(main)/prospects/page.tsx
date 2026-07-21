@@ -28,7 +28,7 @@ export default async function ProspectsPage() {
         importedBy: { select: { name: true } },
       },
     }),
-    prisma.prospectCategory.findMany({ orderBy: { name: "asc" } }),
+    prisma.leadCategory.findMany({ orderBy: { name: "asc" } }),
     hasPermission(admin, "ASSIGN_LEAD")
       ? prisma.admin.findMany({
           where: { isActive: true },
@@ -64,7 +64,9 @@ export default async function ProspectsPage() {
       categories={categories}
       admins={admins}
       canManage={hasPermission(admin, "MANAGE_PROSPECTS")}
+      canManageCategories={hasPermission(admin, "MANAGE_LEAD_CATEGORIES")}
       canAssignOnConvert={hasPermission(admin, "ASSIGN_LEAD")}
+      currentAdminId={admin.id} // NEW
     />
   )
 }

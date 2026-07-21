@@ -7,14 +7,20 @@ import { Building2, Import as ImportIcon, Tag } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ConfirmDialog } from "@/components/confirm-dialog"
 import { ProspectsTable } from "./prospects-table"
-import { ProspectCategoryDialog } from "./prospect-category-dialog"
+
 import { ProspectImportDialog } from "./prospect-import-dialog"
 import { ConvertToLeadDialog } from "./convert-to-lead-dialog"
+import { LeadCategoryDialog } from "../../leads/_components/lead-category-dialog"
 import {
   assignProspectCategoryAction,
   deleteManyProspectsAction,
   deleteProspectAction,
 } from "@/actions/admin/prospects"
+// import {
+//   assignProspectCategoryAction,
+//   deleteManyProspectsAction,
+//   deleteProspectAction,
+// } from "@/actions/admin/prospects"
 
 export type ProspectCategoryOption = {
   id: string
@@ -49,7 +55,9 @@ type ProspectsClientProps = {
   categories: ProspectCategoryOption[]
   admins: AdminOption[]
   canManage: boolean
+  canManageCategories: boolean
   canAssignOnConvert: boolean
+  currentAdminId: string
 }
 
 export function ProspectsClient({
@@ -57,6 +65,8 @@ export function ProspectsClient({
   categories,
   admins,
   canManage,
+  canManageCategories,
+  currentAdminId,
   canAssignOnConvert,
 }: ProspectsClientProps) {
   const router = useRouter()
@@ -134,8 +144,8 @@ export function ProspectsClient({
           </div>
         </div>
 
-        {canManage && (
-          <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2">
+          {canManageCategories && (
             <Button
               variant="outline"
               className="gap-2"
@@ -143,11 +153,13 @@ export function ProspectsClient({
             >
               <Tag className="h-4 w-4" /> Categories
             </Button>
+          )}
+          {canManage && (
             <Button className="gap-2" onClick={() => setIsImportOpen(true)}>
               <ImportIcon className="h-4 w-4" /> Import
             </Button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       <div className="px-4 lg:px-8">
@@ -164,7 +176,7 @@ export function ProspectsClient({
           }
         />
       </div>
-
+      {/* 
       <ProspectCategoryDialog
         open={isCategoryManagerOpen}
         onOpenChange={setIsCategoryManagerOpen}
@@ -174,14 +186,18 @@ export function ProspectsClient({
       <ProspectImportDialog
         open={isImportOpen}
         onOpenChange={setIsImportOpen}
+      /> */}
+
+      <LeadCategoryDialog
+        open={isCategoryManagerOpen}
+        onOpenChange={setIsCategoryManagerOpen}
+        categories={categories}
       />
 
-      <ConvertToLeadDialog
-        prospect={convertTarget}
-        admins={admins}
-        canAssign={canAssignOnConvert}
-        open={!!convertTarget}
-        onOpenChange={(open) => !open && setConvertTarget(null)}
+      <ProspectImportDialog
+        open={isImportOpen}
+        onOpenChange={setIsImportOpen}
+        categories={categories}
       />
 
       <ConfirmDialog
@@ -202,6 +218,15 @@ export function ProspectsClient({
         confirmLabel="Delete All"
         isPending={isPending}
         onConfirm={confirmBulkDelete}
+      />
+
+      <ConvertToLeadDialog
+        prospect={convertTarget}
+        admins={admins}
+        canAssign={canAssignOnConvert}
+        currentAdminId={currentAdminId}
+        open={!!convertTarget}
+        onOpenChange={(open) => !open && setConvertTarget(null)}
       />
     </div>
   )

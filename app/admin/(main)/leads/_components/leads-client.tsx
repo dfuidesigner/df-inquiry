@@ -216,7 +216,7 @@ export function LeadsClient({
               <Tag className="h-4 w-4" /> Categories
             </Button>
           )}
-          {permissions.canCreate && (
+          {/* {permissions.canCreate && (
             <Button
               variant="outline"
               className="gap-2"
@@ -224,7 +224,7 @@ export function LeadsClient({
             >
               <ImportIcon className="h-4 w-4" /> Import
             </Button>
-          )}
+          )} */}
           {permissions.canCreate && (
             <Button className="gap-2" onClick={() => setIsCreateOpen(true)}>
               <Plus className="h-4 w-4" /> Create Lead

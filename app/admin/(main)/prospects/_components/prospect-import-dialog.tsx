@@ -12,7 +12,14 @@ import {
   Download,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
+import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import {
   Dialog,
   DialogContent,
@@ -27,20 +34,20 @@ import { normalizeImportRow } from "@/lib/admin/import-prospect-mapping"
 type ProspectImportDialogProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
+  categories: Array<{ id: string; name: string }> // NEW — Lead categories, shared
 }
+
 type ParsedState = { fileName: string; rows: Record<string, unknown>[] }
 type ImportSummary = {
   created: number
   skipped: Array<{ row: number; reason: string }>
-  createdCategories: string[]
 }
 
-const TEMPLATE_HEADERS = ["name", "email", "phone", "category", "note"]
+const TEMPLATE_HEADERS = ["name", "email", "phone", "note"]
 const TEMPLATE_EXAMPLE = [
   "Jane Doe",
   "jane@example.com",
   "9876543210",
-  "Hospitality",
   "Met at a trade show, interested in LMS training",
 ]
 
@@ -62,19 +69,21 @@ function downloadTemplate() {
 export function ProspectImportDialog({
   open,
   onOpenChange,
+  categories,
 }: ProspectImportDialogProps) {
   const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isPending, startTransition] = useTransition()
   const [parseError, setParseError] = useState("")
   const [parsed, setParsed] = useState<ParsedState | null>(null)
-  const [autoCreateCategories, setAutoCreateCategories] = useState(true)
+  const [categoryId, setCategoryId] = useState("")
   const [summary, setSummary] = useState<ImportSummary | null>(null)
 
   function resetState() {
     setParsed(null)
     setParseError("")
     setSummary(null)
+    setCategoryId("")
     if (fileInputRef.current) fileInputRef.current.value = ""
   }
 
@@ -105,18 +114,14 @@ export function ProspectImportDialog({
     if (!parsed) return
     startTransition(async () => {
       const res = await importProspectsAction(parsed.rows, {
-        autoCreateCategories,
+        categoryId: categoryId || null,
       })
       if (!res.success) {
         toast.error(res.message)
         return
       }
       toast.success(res.message)
-      setSummary({
-        created: res.created,
-        skipped: res.skipped,
-        createdCategories: res.createdCategories,
-      })
+      setSummary({ created: res.created, skipped: res.skipped })
       router.refresh()
     })
   }
@@ -150,6 +155,30 @@ export function ProspectImportDialog({
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* NEW — one category applied to the whole batch */}
+          <div className="space-y-2">
+            <Label>Category for this import</Label>
+            <Select
+              value={categoryId || "none"}
+              onValueChange={(v) => setCategoryId(v === "none" ? "" : v)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Uncategorized" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Uncategorized</SelectItem>
+                {categories.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Every prospect in this file will be tagged with this category.
+            </p>
+          </div>
+
           <div
             className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed p-8 text-center"
             onDragOver={(e) => e.preventDefault()}
@@ -200,29 +229,12 @@ export function ProspectImportDialog({
             </div>
           )}
 
-          {parsed && (
-            <label className="flex items-start gap-3 rounded-md border p-3">
-              <Checkbox
-                checked={autoCreateCategories}
-                onCheckedChange={(c) => setAutoCreateCategories(c === true)}
-              />
-              <span className="text-sm">
-                Automatically create categories that don&apos;t exist yet
-              </span>
-            </label>
-          )}
-
           {summary && (
             <div className="space-y-2 rounded-lg border p-4 text-sm">
               <p className="font-medium text-emerald-700">
                 {summary.created} prospect{summary.created === 1 ? "" : "s"}{" "}
                 imported successfully.
               </p>
-              {summary.createdCategories.length > 0 && (
-                <p className="text-muted-foreground">
-                  New categories created: {summary.createdCategories.join(", ")}
-                </p>
-              )}
               {summary.skipped.length > 0 && (
                 <div>
                   <p className="font-medium text-destructive">

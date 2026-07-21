@@ -6,15 +6,10 @@ const HEADER_ALIASES: Record<string, string> = {
   phone: "phone",
   "phone number": "phone",
   mobile: "phone",
-  category: "category",
-  industry: "category",
-  "industry type": "category",
-  type: "category",
   note: "note",
   notes: "note",
   comment: "note",
 }
-
 export function normalizeImportHeader(header: string) {
   const key = header
     .trim()

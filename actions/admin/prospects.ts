@@ -19,12 +19,11 @@ export type ImportProspectsResult = {
   message: string
   created: number
   skipped: Array<{ row: number; reason: string }>
-  createdCategories: string[]
 }
 
 export async function importProspectsAction(
   rows: Record<string, unknown>[],
-  options: { autoCreateCategories?: boolean } = {}
+  options: { categoryId?: string | null } = {}
 ): Promise<ImportProspectsResult> {
   try {
     const admin = await requirePermission("MANAGE_PROSPECTS")
@@ -35,7 +34,6 @@ export async function importProspectsAction(
         message: "No rows to import.",
         created: 0,
         skipped: [],
-        createdCategories: [],
       }
     }
     if (rows.length > 500) {
@@ -45,24 +43,29 @@ export async function importProspectsAction(
           "Import is limited to 500 rows at a time. Please split your file.",
         created: 0,
         skipped: [],
-        createdCategories: [],
       }
     }
 
-    const autoCreateCategories = options.autoCreateCategories ?? true
-    const existingCategories = await prisma.prospectCategory.findMany({
-      select: { id: true, name: true },
-    })
-    const categoryByName = new Map(
-      existingCategories.map((c) => [c.name.toLowerCase(), c.id])
-    )
-    const createdCategoryNames = new Set<string>()
+    // Validate the chosen category up front rather than per-row — the
+    // whole batch gets the same category now.
+    let categoryId: string | null = null
+    if (options.categoryId) {
+      const category = await prisma.leadCategory.findUnique({
+        where: { id: options.categoryId },
+      })
+      if (!category) {
+        return {
+          success: false,
+          message: "Selected category no longer exists.",
+          created: 0,
+          skipped: [],
+        }
+      }
+      categoryId = category.id
+    }
 
     const skipped: Array<{ row: number; reason: string }> = []
-    const validRows: Array<{
-      data: ImportProspectRow
-      categoryId: string | null
-    }> = []
+    const validRows: ImportProspectRow[] = []
 
     for (let i = 0; i < rows.length; i++) {
       const parsed = ImportProspectRowSchema.safeParse(rows[i])
@@ -75,24 +78,7 @@ export async function importProspectsAction(
         })
         continue
       }
-
-      let categoryId: string | null = null
-      const categoryName = parsed.data.category?.trim()
-      if (categoryName) {
-        const key = categoryName.toLowerCase()
-        if (categoryByName.has(key)) {
-          categoryId = categoryByName.get(key) ?? null
-        } else if (autoCreateCategories) {
-          const created = await prisma.prospectCategory.create({
-            data: { name: categoryName },
-          })
-          categoryByName.set(key, created.id)
-          categoryId = created.id
-          createdCategoryNames.add(categoryName)
-        }
-      }
-
-      validRows.push({ data: parsed.data, categoryId })
+      validRows.push(parsed.data)
     }
 
     let created = 0
@@ -100,11 +86,11 @@ export async function importProspectsAction(
       for (const row of validRows) {
         await tx.prospect.create({
           data: {
-            name: row.data.name,
-            email: row.data.email,
-            phone: row.data.phone,
-            note: row.data.note,
-            categoryId: row.categoryId,
+            name: row.name,
+            email: row.email,
+            phone: row.phone,
+            note: row.note,
+            categoryId,
             source: "Import",
             importedById: admin.id,
           },
@@ -120,7 +106,6 @@ export async function importProspectsAction(
       message: `Imported ${created} prospect${created === 1 ? "" : "s"}${skipped.length ? `, skipped ${skipped.length}` : ""}.`,
       created,
       skipped,
-      createdCategories: Array.from(createdCategoryNames),
     }
   } catch (error) {
     console.error(error)
@@ -130,7 +115,6 @@ export async function importProspectsAction(
         error instanceof Error ? error.message : "Failed to import prospects.",
       created: 0,
       skipped: [],
-      createdCategories: [],
     }
   }
 }
@@ -157,7 +141,7 @@ export async function convertProspectToLeadAction(
     }
 
     const finalAssignedToId = hasPermission(admin, "ASSIGN_LEAD")
-      ? validated.data.assignedToId || null
+      ? validated.data.assignedToId || admin.id
       : admin.id
 
     const lead = await prisma.$transaction(async (tx) => {
