@@ -129,6 +129,17 @@ model Inquiry {
 
   convertedFromProspect Prospect?
 
+
+
+
+metaLeadgenId  String? @unique
+  metaFormId     String?
+  metaAdId       String?
+  metaCampaignId String?
+  metaPageId     String?
+
+
+
   @@index([assignedToId])
   @@index([status])
   @@index([categoryId])

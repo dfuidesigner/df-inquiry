@@ -17,7 +17,10 @@ export default async function LeadsPage() {
 
   const [rawLeads, categories] = await Promise.all([
     prisma.inquiry.findMany({
-      where: leadAccessWhere(admin),
+      where: {
+        ...leadAccessWhere(admin),
+        status: { not: "LOST" },
+      },
       orderBy: { createdAt: "desc" },
       include: {
         assignedTo: { select: { id: true, name: true, email: true } },

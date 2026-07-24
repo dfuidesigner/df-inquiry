@@ -68,6 +68,7 @@ type LeadsTableProps = {
   categories: LeadCategoryOption[]
   onCategoryChange: (lead: LeadRowData, categoryId: string) => void
   onBulkDeleteRequest: (ids: string[], clearSelection: () => void) => void
+  filterableStatuses: string[]
 }
 
 const statusClassName: Record<string, string> = {
@@ -91,12 +92,25 @@ export function LeadsTable({
   onTimeline,
   onAssign,
   onQuickStatus,
+  filterableStatuses,
   onReassign,
   categories,
   onCategoryChange,
   onBulkDeleteRequest,
 }: LeadsTableProps) {
   const filters: FilterConfig[] = [
+    ...(filterableStatuses.length > 0
+      ? [
+          {
+            columnId: "status",
+            label: "Status",
+            options: filterableStatuses.map((status) => ({
+              label: status.replace("_", " "),
+              value: status,
+            })),
+          },
+        ]
+      : []),
     {
       columnId: "duplicateStatus",
       label: "Duplicates",
@@ -105,14 +119,7 @@ export function LeadsTable({
         { label: "Unique leads", value: "Unique" },
       ],
     },
-    {
-      columnId: "status",
-      label: "Status",
-      options: LEAD_STATUSES.map((status) => ({
-        label: status.replace("_", " "),
-        value: status,
-      })),
-    },
+
     {
       columnId: "assignedToName",
       label: "Assigned To",

@@ -13,6 +13,7 @@ import {
   LucideIcon,
   Settings,
   ShieldCheck,
+  XCircle, // NEW
 } from "lucide-react"
 import type { PermissionKey } from "@/generated/prisma/client"
 import { Logo } from "@/components/logo"
@@ -49,6 +50,12 @@ const adminNavigation: Array<{ label: string; items: NavigationItem[] }> = [
         title: "Leads",
         url: "/admin/leads",
         icon: ClipboardList,
+        permissions: ["VIEW_ALL_LEADS", "VIEW_ASSIGNED_LEADS"],
+      },
+      {
+        title: "Lost Leads",
+        url: "/admin/lost-leads",
+        icon: XCircle,
         permissions: ["VIEW_ALL_LEADS", "VIEW_ASSIGNED_LEADS"],
       },
       {

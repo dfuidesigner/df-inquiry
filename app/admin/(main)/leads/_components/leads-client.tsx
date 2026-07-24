@@ -17,7 +17,7 @@ import {
   deleteLeadAction,
   updateLeadStatusAction,
 } from "@/actions/admin/leads"
-import type { LeadStatus } from "@/lib/validations/admin-lead"
+import { LEAD_STATUSES, type LeadStatus } from "@/lib/validations/admin-lead"
 import { LeadReassignDialog } from "./lead-reassign-dialog"
 import { LeadCategoryDialog } from "./lead-category-dialog"
 import { LeadImportDialog } from "./lead-import-dialog"
@@ -65,7 +65,7 @@ export type LeadRowData = {
   lastNote: string
   recentActions: LeadActionRow[]
   duplicateCount: number
-  duplicateStatus: "Duplicate" | "Unique"   
+  duplicateStatus: "Duplicate" | "Unique"
 }
 
 export type AdminOption = {
@@ -80,6 +80,7 @@ type LeadsClientProps = {
   admins: AdminOption[]
   currentAdmin: AdminUser
   categories: LeadCategoryOption[]
+  variant?: "active" | "lost"
 }
 
 function can(admin: AdminUser, permission: PermissionKey) {
@@ -92,6 +93,7 @@ export function LeadsClient({
   admins,
   categories,
   currentAdmin,
+  variant = "active",
 }: LeadsClientProps) {
   const router = useRouter()
   const [isCreateOpen, setIsCreateOpen] = useState(false)
@@ -102,7 +104,7 @@ export function LeadsClient({
   const [reassignLead, setReassignLead] = useState<LeadRowData | null>(null)
   const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false)
   const [isImportOpen, setIsImportOpen] = useState(false)
-
+  const isLostView = variant === "lost"
   const [bulkDeleteState, setBulkDeleteState] = useState<{
     ids: string[]
     clearSelection: () => void
@@ -199,13 +201,41 @@ export function LeadsClient({
           </div>
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              Leads
+              {isLostView ? "Lost Leads" : "Leads"}
             </h1>
             <p className="text-sm text-muted-foreground">
-              Manage {leads.length} leads, follow-ups, status, and assignments.
+              {isLostView
+                ? `${leads.length} lead(s) marked as Lost. Update the status or use "Reassign for recheck" to give one another shot.`
+                : `Manage ${leads.length} leads, follow-ups, status, and assignments.`}
             </p>
           </div>
         </div>
+        {/* <div className="flex items-center gap-2">
+          {permissions.canManageCategories && (
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={() => setIsCategoryManagerOpen(true)}
+            >
+              <Tag className="h-4 w-4" /> Categories
+            </Button>
+          )}
+          {permissions.canCreate && (
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={() => setIsImportOpen(true)}
+            >
+              <ImportIcon className="h-4 w-4" /> Import
+            </Button>
+          )}
+          {permissions.canCreate && (
+            <Button className="gap-2" onClick={() => setIsCreateOpen(true)}>
+              <Plus className="h-4 w-4" /> Create Lead
+            </Button>
+          )}
+        </div> */}
+
         <div className="flex items-center gap-2">
           {permissions.canManageCategories && (
             <Button
@@ -216,7 +246,7 @@ export function LeadsClient({
               <Tag className="h-4 w-4" /> Categories
             </Button>
           )}
-          {/* {permissions.canCreate && (
+          {/* {!isLostView && permissions.canCreate && (
             <Button
               variant="outline"
               className="gap-2"
@@ -225,7 +255,7 @@ export function LeadsClient({
               <ImportIcon className="h-4 w-4" /> Import
             </Button>
           )} */}
-          {permissions.canCreate && (
+          {!isLostView && permissions.canCreate && (
             <Button className="gap-2" onClick={() => setIsCreateOpen(true)}>
               <Plus className="h-4 w-4" /> Create Lead
             </Button>
@@ -256,6 +286,9 @@ export function LeadsClient({
           onReassign={setReassignLead}
           onCategoryChange={handleCategoryChange}
           categories={categories}
+          filterableStatuses={
+            isLostView ? [] : LEAD_STATUSES.filter((s) => s !== "LOST")
+          }
           onBulkDeleteRequest={(ids, clearSelection) =>
             setBulkDeleteState({ ids, clearSelection })
           }
