@@ -8,6 +8,9 @@ import { ensureMetaAdsCategoryId } from "@/lib/meta/ensure-meta-category"
 
 // 1. Webhook verification — Meta calls this once when you configure the URL.
 export async function GET(request: Request) {
+
+  console.log("🚀 META WEBHOOK HIT");
+
   const { searchParams } = new URL(request.url)
   const mode = searchParams.get("hub.mode")
   const token = searchParams.get("hub.verify_token")
@@ -23,8 +26,31 @@ export async function GET(request: Request) {
 
 // 2. Receive lead notifications.
 export async function POST(request: Request) {
+  
+   console.log("=================================");
+  console.log("🚀 META WEBHOOK HIT");
+  console.log("Time:", new Date().toISOString());
+
+
   const rawBody = await request.text()
+
+
+  console.log("Raw Body:");
+console.log(rawBody);
+
+
   const signature = request.headers.get("x-hub-signature-256")
+
+
+  console.log("Signature Header:", signature);
+console.log("META_APP_SECRET Exists:", !!process.env.META_APP_SECRET);
+
+
+
+const isValid = verifyMetaSignature(rawBody, signature);
+
+console.log("Signature Valid:", isValid);
+
 
   if (!verifyMetaSignature(rawBody, signature)) {
     console.error("Meta webhook: invalid signature")

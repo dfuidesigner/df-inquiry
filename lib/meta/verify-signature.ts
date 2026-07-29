@@ -18,6 +18,9 @@ export function verifyMetaSignature(
     .update(rawBody, "utf8")
     .digest("hex")
 
+  console.log("Expected:", expected)
+  console.log("Provided:", signature)
+
   const expectedBuffer = Buffer.from(expected, "hex")
   const providedBuffer = Buffer.from(signature, "hex")
   if (expectedBuffer.length !== providedBuffer.length) return false
