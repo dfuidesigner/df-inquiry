@@ -207,6 +207,7 @@ export function EnquiryModal() {
                   <option value="Custom SaaS Development">
                     Custom SaaS Development
                   </option>
+                  <option value="SEO">Search Engine Optimization (SEO)</option>
                   <option value="Digital Marketing & SEO">
                     Digital Marketing & SEO
                   </option>

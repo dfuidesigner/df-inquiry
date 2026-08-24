@@ -344,6 +344,9 @@ export default function ConsultationSection({
                           <option value="game-development">
                             Game Development
                           </option>
+                          <option value="SEO">
+                            Search Engine Optimization (SEO)
+                          </option>
 
                           <option value="other">Other</option>
                         </>
