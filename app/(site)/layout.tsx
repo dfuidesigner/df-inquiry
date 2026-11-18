@@ -7,6 +7,7 @@ import { GoogleAdsTag } from "@/components/seo/DelayedGAd"
 import { MetaPixel } from "@/components/seo/MetaPixel"
 import { EnquiryProvider } from "@/contexts/EnquiryContext"
 import { EnquiryModal } from "@/components/common/EnquiryModal"
+import Script from "next/script"
 export const metadata = {
   title: "Digital Fueled",
   description: "Digital Fueled",
@@ -31,6 +32,16 @@ export default async function SiteLayout({
           <EnquiryModal />
         </EnquiryProvider>
       </MotionProvider>
+
+      <Script id="microsoft-clarity" strategy="afterInteractive">
+        {`
+              (function(c,l,a,r,i,t,y){
+                c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+                t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+                y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+              })(window, document, "clarity", "script", "zfjqx6siyw");
+            `}
+      </Script>
     </div>
   )
 }
